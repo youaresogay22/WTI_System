@@ -1,8 +1,11 @@
 import csv
 import macPro
+
+csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
+
 #맥 어드레스 추출
 def extract_macAddress():
-    with open("/home/user/Desktop/WTI_System_Project/csv/probe_re.csv","r") as f:
+    with open(csv_file_path+"probe_re.csv","r") as f:
         rdr = csv.reader(f)
         mac_list = extract_data_header(rdr,"wlan.sa")
         mac_list = macPro.remove_list_overlap(mac_list)
@@ -35,7 +38,7 @@ def extract_data_index(rdr,idx):
 
 #패킷 라인 추출
 def extract_packetLine(mac_list,mac_dc):
-    with open("/home/user/Desktop/data/csv/probe_re.csv","r") as f:
+    with open(csv_file_path+"probe_re.csv","r") as f:
         rdr = csv.reader(f)
         packet_list=[]
 

@@ -2,7 +2,7 @@ import os
 import csv
 import timeTrans
 
-probe_path = "/home/user/Desktop/WTI_System_Project/probe/"
+probe_path = "/home/user/Desktop/git/WTI_System_Project/probe/"
 
 #probe 폴더 생성
 def make_probeDirectory():

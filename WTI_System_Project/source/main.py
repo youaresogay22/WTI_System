@@ -50,7 +50,8 @@ def main():
     
     #step3 시간별 csv파일에 패킷데이터 저장
     file.save_csvFile(mac_list,mac_dc)
-            
+    
+    """
     #시간별 csv파일을 참조하여 시퀀스 넘버 증가량 추출
     num_increList = []
     time_list = []
@@ -67,7 +68,7 @@ def main():
                 #시퀀스 넘버 기울기를 구하는 머신러닝 생성
                 sess, hypothesis = delSeqNum.linear_regreesion(time_list,seqNum_list)
                 
-                
+    """         
                 
                 
                 

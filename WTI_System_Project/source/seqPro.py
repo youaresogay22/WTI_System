@@ -1,6 +1,8 @@
 import csv
 import extract
 
+csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
+
 #시퀀스 번호 전처리
 def seq_pretreat(seq):
     cycle=0
@@ -20,13 +22,13 @@ def seq_Preprosessor():
     seq_lines = []          #가공된 시퀀스번호 패킷데이터 라인
 
     #시퀀스 넘버 추출
-    with open("/home/user/Desktop/WTI_System_Project/csv/probe.csv","r") as f:
+    with open(csv_file_path+"probe.csv","r") as f:
         rdr  = csv.reader(f)
         seq_list = extract.extract_data_header(rdr,"wlan.seq")
         seq_list = seq_pretreat(seq_list)
 
     #시퀀스 번호 수정
-    with open("/home/user/Desktop/WTI_System_Project/csv/probe.csv","r") as f:
+    with open(csv_file_path+"probe.csv","r") as f:
         rdr = csv.reader(f)
         i = 0
         for line in rdr:
@@ -38,6 +40,6 @@ def seq_Preprosessor():
                 seq_lines.append(line)
 
     #수정된 시퀀스 번호를 csv에 새로 작성
-    with open("/home/user/Desktop/WTI_System_Project/csv/probe_re.csv","w") as f:
+    with open(csv_file_path+"probe_re.csv","w") as f:
         wr = csv.writer(f)
         wr.writerows(seq_lines)
