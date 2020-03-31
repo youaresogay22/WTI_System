@@ -14,6 +14,7 @@ sudo iwconfig
 
 
 2. 패킷 데이터 수집 및 가공
+
 Step 1 Desktop 화면에 git 폴더를 생성합니다.
 ```
 user@kali:~/Desktop$ mkdir git
