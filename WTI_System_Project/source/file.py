@@ -44,6 +44,12 @@ def make_csvFile(mac_list, mac_csv_dc):
     
     return mac_csv_dc
 
+#mac별 시퀀스넘버증가량,길이(length),레이블 Feature 모델 csv파일 생성
+def make_csvFeature(mac):
+    csvFeatureFileName = probe_path+mac+"/"+mac+"_"+"FeatureModle.csv"
+    with open(csvFeatureFileName,"w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["delta seq no","length","label"])
 
 #시간별로 csv파일에 저장
 def save_csvFile(mac_list,mac_dc):

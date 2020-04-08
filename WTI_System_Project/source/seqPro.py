@@ -1,45 +1,40 @@
 import csv
 import extract
+import copy
 
 csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
 
-#시퀀스 번호 전처리
-def seq_pretreat(seq):
-    cycle=0
-    seq_no_re = []
-    
-    for idx in range(len(seq)):
-        #현재 시퀀스 번호가 이전 시퀀스 번호보다 작으면
-        #사이클이 바꼈다는 의미로 사이클 번호를 1 증가시킵니다.
-        if idx!=0 and int(seq[idx])<int(seq[idx-1]):
-            cycle = cycle + 1
-        seq_no_re.append(int(seq[idx]) + (cycle*4096))
-    return seq_no_re
-
 #시퀀스번호 전처리
 def seq_Preprosessor():
-    seq_list = []             #시퀀스 번호 추출 리스트
-    seq_lines = []          #가공된 시퀀스번호 패킷데이터 라인
+    pro_line = []
+    temp_line = []
+    cycle=0
 
-    #시퀀스 넘버 추출
-    with open(csv_file_path+"probe.csv","r") as f:
-        rdr  = csv.reader(f)
-        seq_list = extract.extract_data_header(rdr,"wlan.seq")
-        seq_list = seq_pretreat(seq_list)
-
-    #시퀀스 번호 수정
     with open(csv_file_path+"probe.csv","r") as f:
         rdr = csv.reader(f)
-        i = 0
-        for line in rdr:
-            if line[2] =="wlan.seq":
-                seq_lines.append(line)
-            else:
-                line[2] = seq_list[i]
-                i = i+1
-                seq_lines.append(line)
 
-    #수정된 시퀀스 번호를 csv에 새로 작성
+        #임시리스트에 패킷데이터 라인 복사
+        for line in rdr:
+            if line[0]=="wlan.sa":
+                continue
+            else:
+                pro_line.append(line)
+
+        #임시 리스트에 저장
+        temp_line = copy.deepcopy(pro_line)
+        
+        for idx in range(len(pro_line)):
+            #시퀀스번호 가공
+            if idx!=0 and int(pro_line[idx][2])<int(pro_line[idx-1][2]):
+                cycle = cycle + 1
+            temp_line[idx][2] =  int(pro_line[idx][2]) + (cycle*4096)
+        
+            #길이(length) 가공
+            temp_line[idx][4] = int(pro_line[idx][4]) - len(pro_line[idx][3])
+            
+        pro_line = copy.deepcopy(temp_line)
+
+    #수정된 패킷 데이터 라인들을 csv에 새로 작성
     with open(csv_file_path+"probe_re.csv","w") as f:
         wr = csv.writer(f)
-        wr.writerows(seq_lines)
+        wr.writerows(pro_line)
