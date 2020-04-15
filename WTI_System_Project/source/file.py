@@ -1,6 +1,7 @@
 import os
 import csv
 import timeTrans
+import delSeqNum
 
 probe_path = "/home/user/Desktop/git/WTI_System_Project/probe/"
 
@@ -70,3 +71,39 @@ def save_csvFile(mac_list,mac_dc):
             with open(csv_filename,"a") as f:
                 writer = csv.writer(f)
                 writer.writerow(value[i])
+
+#Feature 추출 모델에 데이터 입력
+def init_FeatureFile(mac_csv_dc):
+    time_list = []          #수신시간 리스트
+    seqNum_list = []    #시퀀스넘버 리스트
+    W = 0                     #기울기
+    label = 0                 #무선단말 레이블
+
+    for key,value in mac_csv_dc.items():
+
+        #시간별 csv파일을 참조하여 시퀀스 넘버 증가량, 길이, label 설정
+        for idx in range(len(value)):
+            csvFile = value[idx]           
+            time_list = delSeqNum.make_timeRelative_list(csvFile)
+            seqNum_list = delSeqNum.make_seqNumberList(csvFile)
+
+            if not time_list or not seqNum_list:
+                continue
+            else:
+                #시퀀스 넘버 기울기를 구하는 머신러닝 생성
+                W = delSeqNum.linear_regreesion(time_list,seqNum_list)
+
+            #Feature 추출 모델 이름 생성
+            csv_fm = probe_path + key + "/" + key + "_FeatureModle.csv"
+
+            #길이 저장
+            with open(csvFile,"r") as f:
+                rdr = csv.reader(f)
+                length = rdr.__next__()[4]
+            
+            with open(csv_fm,"a") as f:
+                feature_lline = [W,length,label]
+                writer = csv.writer(f)
+                writer.writerow(feature_lline)
+            
+            label += 1

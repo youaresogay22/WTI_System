@@ -84,5 +84,5 @@ def linear_regreesion(x_train,y_train):
             )
             #if step % 20 == 0:
             #   print(step, cost_val, W_val, b_val)
-
-    return W_val
+    
+    return W_val[0]

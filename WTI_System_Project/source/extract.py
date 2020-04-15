@@ -1,5 +1,6 @@
 import csv
 import macPro
+import copy
 
 csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
 
@@ -7,8 +8,8 @@ csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
 def extract_macAddress():
     with open(csv_file_path+"probe_re.csv","r") as f:
         rdr = csv.reader(f)
-        mac_list = extract_data_header(rdr,"wlan.sa")
-        mac_list = macPro.remove_list_overlap(mac_list)
+        mac_list = extract_data_header(rdr,"wlan.sa")   #맥 추출
+        mac_list = list(set(mac_list))  #맥 중복 제거
     return mac_list
 
 # csv 열 데이터 추출
@@ -45,7 +46,7 @@ def extract_packetLine(mac_list,mac_dc):
         #rdr을 packet_list으로 복사
         for line in rdr:
             packet_list.append(line);
-        
+
         for idx in range(len(mac_list)):
             #패킷데이터의 해당 단말의 mac이면 리스트에 저장한다.
             for line in packet_list:

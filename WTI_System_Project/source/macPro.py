@@ -1,12 +1,6 @@
 import extract
 import csv
 
-#리스트 중복 제거
-def remove_list_overlap(temp):
-    return list(set(temp))
-
-
-
 def make_macCsvFileNameList(mac_list):
     mac_csv_dc = {}
 
