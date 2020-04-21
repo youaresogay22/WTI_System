@@ -1,8 +1,8 @@
 import csv
 import extract
 import copy
+import filePath
 
-csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
 
 #시퀀스번호 전처리
 def seq_Preprosessor():
@@ -10,7 +10,7 @@ def seq_Preprosessor():
     temp_line = []
     cycle=0
 
-    with open(csv_file_path+"probe.csv","r") as f:
+    with open(filePath.csv_probe_path,"r") as f:
         rdr = csv.reader(f)
 
         #임시리스트에 패킷데이터 라인 복사
@@ -35,6 +35,6 @@ def seq_Preprosessor():
         pro_line = copy.deepcopy(temp_line)
 
     #수정된 패킷 데이터 라인들을 csv에 새로 작성
-    with open(csv_file_path+"probe_re.csv","w") as f:
+    with open(filePath.csv_probeRe_path,"w") as f:
         wr = csv.writer(f)
         wr.writerows(pro_line)

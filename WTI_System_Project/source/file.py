@@ -2,26 +2,27 @@ import os
 import csv
 import timeTrans
 import delSeqNum
+import filePath
 
-probe_path = "/home/user/Desktop/git/WTI_System_Project/probe/"
+
 
 #probe 폴더 생성
 def make_probeDirectory():
     #맥 어드레스 별로 디렉토리 생성
-    if not os.path.exists(probe_path):
-        os.mkdir(probe_path)
-        print("Directory ",probe_path," created")
+    if not os.path.exists(filePath.probe_path):
+        os.mkdir(filePath.probe_path)
+        print("Directory ",filePath.probe_path," created")
     else:
-        print("Directory ",probe_path," already exist")
+        print("Directory ",filePath.probe_path," already exist")
 
 #mac 폴더 생성
 def make_macDirectory(mac_list):
     for idx in range(len(mac_list)):
-        if not os.path.exists(probe_path+mac_list[idx]):
-            os.mkdir(probe_path+mac_list[idx])
-            print("Directory ",probe_path,mac_list[idx], " created")
+        if not os.path.exists(filePath.probe_path+mac_list[idx]):
+            os.mkdir(filePath.probe_path+mac_list[idx])
+            print("Directory ",filePath.probe_path,mac_list[idx], " created")
         else:
-            print("Directory ",probe_path,mac_list[idx], " already exist")
+            print("Directory ",filePath.probe_path,mac_list[idx], " already exist")
 
 #시간별 csv파일 생성 및 딕셔너리에 csv파일 이름 리스트 저장
 def make_csvFile(mac_list, mac_csv_dc):
@@ -32,7 +33,7 @@ def make_csvFile(mac_list, mac_csv_dc):
         #시, 분 별 csv 파일 이름 생성
         for hour in range(0,24,1):
             for minute in range(0,60,10):
-                csv_filename = probe_path+mac_list[idx]+"/" + mac_list[idx] + "_" + str(hour) + "_" + str(minute) + ".csv"
+                csv_filename = filePath.probe_path+mac_list[idx]+"/" + mac_list[idx] + "_" + str(hour) + "_" + str(minute) + ".csv"
                 csv_nameList.append(csv_filename)
 
                 #mac키에 csv파일 이름 추가
@@ -47,7 +48,7 @@ def make_csvFile(mac_list, mac_csv_dc):
 
 #mac별 시퀀스넘버증가량,길이(length),레이블 Feature 모델 csv파일 생성
 def make_csvFeature(mac):
-    csvFeatureFileName = probe_path+mac+"/"+mac+"_"+"FeatureModle.csv"
+    csvFeatureFileName = filePath.probe_path+mac+"/"+mac+"_"+"FeatureModle.csv"
     with open(csvFeatureFileName,"w") as f:
         writer = csv.writer(f)
         writer.writerow(["delta seq no","length","label"])
@@ -64,7 +65,7 @@ def save_csvFile(mac_list,mac_dc):
             second = int(float(value[i][1]))
             h, m = timeTrans.trans_time(second) # 패킷 데이터의 경과된 시, 분 변환
             
-            csv_filename = probe_path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv" #csv 파일 이름 생성
+            csv_filename = filePath.probe_path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv" #csv 파일 이름 생성
             
             
             #csv 파일 내용 작성
@@ -94,7 +95,7 @@ def init_FeatureFile(mac_csv_dc):
                 W = delSeqNum.linear_regreesion(time_list,seqNum_list)
 
             #Feature 추출 모델 이름 생성
-            csv_fm = probe_path + key + "/" + key + "_FeatureModle.csv"
+            csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv"
 
             #길이 저장
             with open(csvFile,"r") as f:

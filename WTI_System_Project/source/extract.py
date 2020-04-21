@@ -1,12 +1,12 @@
 import csv
 import macPro
 import copy
+import filePath
 
-csv_file_path = "/home/user/Desktop/git/WTI_System_Project/csv/"
 
 #맥 어드레스 추출
 def extract_macAddress():
-    with open(csv_file_path+"probe_re.csv","r") as f:
+    with open(filePath.csv_probeRe_path,"r") as f:
         rdr = csv.reader(f)
         mac_list = extract_data_header(rdr,"wlan.sa")   #맥 추출
         mac_list = list(set(mac_list))  #맥 중복 제거
@@ -39,7 +39,7 @@ def extract_data_index(rdr,idx):
 
 #패킷 라인 추출
 def extract_packetLine(mac_list,mac_dc):
-    with open(csv_file_path+"probe_re.csv","r") as f:
+    with open(filePath.csv_probeRe_path,"r") as f:
         rdr = csv.reader(f)
         packet_list=[]
 

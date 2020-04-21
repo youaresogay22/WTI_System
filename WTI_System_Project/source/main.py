@@ -1,10 +1,10 @@
 """
 title : 무선단말 패킷 데이터 추출 및 가공 시스템
 author : 김용환 (yh.kim951107@gmail.com)
-date : 2020-04-08
+date : 2020-04-21
 detail : 
 todo : 
-extract_mac_address부터 최적화 시행 필요
+
 
 """
 import csv
@@ -15,6 +15,7 @@ import timeTrans
 import delSeqNum
 import extract
 import file
+import filePath
 
 #main
 def main():
@@ -22,6 +23,24 @@ def main():
     mac_list = []           #추출된 맥 리스트
     mac_dc = {}             #맥어드레스 딕셔너리, key:mac address value: 해당 맥 패킷데이터 리스트
     mac_csv_dc = {}       #mac별 csv파일 리스트
+
+    #NIC 모니터 모드 설정
+    os.system("sudo ifconfig wlan0 down")
+    os.system("sudo iwconfig wlan0 mode monitor")
+    os.system("sudo ifconfig wlan0 up")
+
+    #디렉터리 생성
+
+    os.system("sudo mkdir " +filePath.pf_path)
+    os.system("sudo mkdir " +filePath.csv_path)
+    os.system("sudo chmod 777 " + filePath.csv_path)
+
+    #패킷 캡처 명령어
+    os.system("sudo tshark -i wlan0 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype probe-req)\' -a duration:86400")
+    os.system("sudo tshark -r " + 
+                        filePath.pf_data_path +
+                         " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
+
 
     #시퀀스번호 전처리
     seqPro.seq_Preprosessor()
@@ -40,8 +59,6 @@ def main():
     
     #mac별 csv 파일 생성 및 mac별 csv파일 이름 리스트 설정
     file.make_csvFile(mac_list,mac_csv_dc)
-
-
 
     #step1 맥 어드레스 별 딕셔너리 초기화
     #mac_dc {key:mac_address value : 패킷리스트}

@@ -78,7 +78,7 @@ def linear_regreesion(x_train,y_train):
         sess.run(tf.global_variables_initializer())
 
         # Fit the line
-        for step in range(2001):
+        for step in range(501):
             _, cost_val, W_val, b_val = sess.run(
                 [train, cost, W, b], feed_dict={X: x_train, Y: y_train}
             )
