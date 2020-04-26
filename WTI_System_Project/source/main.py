@@ -4,7 +4,7 @@ author : 김용환 (yh.kim951107@gmail.com)
 date : 2020-04-21
 detail : 
 todo : 
-
+linear regression 관련해서 최적화 필요
 
 """
 import csv
@@ -16,13 +16,7 @@ import delSeqNum
 import extract
 import file
 import filePath
-
-#main
-def main():
-    
-    mac_list = []           #추출된 맥 리스트
-    mac_dc = {}             #맥어드레스 딕셔너리, key:mac address value: 해당 맥 패킷데이터 리스트
-    mac_csv_dc = {}       #mac별 csv파일 리스트
+def packet_collect():
 
     #NIC 모니터 모드 설정
     os.system("sudo ifconfig wlan0 down")
@@ -41,6 +35,14 @@ def main():
                         filePath.pf_data_path +
                          " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
 
+#main
+def main():
+    
+    mac_list = []           #추출된 맥 리스트
+    mac_dc = {}             #맥어드레스 딕셔너리, key:mac address value: 해당 맥 패킷데이터 리스트
+    mac_csv_dc = {}       #mac별 csv파일 리스트
+
+#    packet_collect()
 
     #시퀀스번호 전처리
     seqPro.seq_Preprosessor()
@@ -53,6 +55,7 @@ def main():
 
     #mac별 폴더 생성
     file.make_macDirectory(mac_list)
+    
     
     #mac별 csv 파일이름 리스트 생성
     mac_csv_dc = macPro.make_macCsvFileNameList(mac_list)
@@ -69,7 +72,7 @@ def main():
     
     #step3 시간별 csv파일에 패킷데이터 저장
     file.save_csvFile(mac_list,mac_dc)
-    
+
     #mac별 Feature 추출 모델 파일 생성
     for idx in range(len(mac_list)):
         file.make_csvFeature(mac_list[idx])

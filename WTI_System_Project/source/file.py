@@ -8,6 +8,8 @@ import filePath
 
 #probe 폴더 생성
 def make_probeDirectory():
+    os.system("sudo rm -r "+filePath.probe_path)
+
     #맥 어드레스 별로 디렉토리 생성
     if not os.path.exists(filePath.probe_path):
         os.mkdir(filePath.probe_path)
