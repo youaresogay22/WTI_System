@@ -42,7 +42,7 @@ def main():
     mac_dc = {}             #맥어드레스 딕셔너리, key:mac address value: 해당 맥 패킷데이터 리스트
     mac_csv_dc = {}       #mac별 csv파일 리스트
 
-#    packet_collect()
+    #packet_collect()
 
     #시퀀스번호 전처리
     seqPro.seq_Preprosessor()

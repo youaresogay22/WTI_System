@@ -89,13 +89,13 @@ def init_FeatureFile(mac_csv_dc):
             csvFile = value[idx]           
             time_list = delSeqNum.make_timeRelative_list(csvFile)
             seqNum_list = delSeqNum.make_seqNumberList(csvFile)
-
+            
             if not time_list or not seqNum_list:
                 continue
             else:
                 #시퀀스 넘버 기울기를 구하는 머신러닝 생성
-                W = delSeqNum.linear_regreesion(time_list,seqNum_list)
-
+                W = float(delSeqNum.linear_regreesion(time_list,seqNum_list))
+            
             #Feature 추출 모델 이름 생성
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv"
 
