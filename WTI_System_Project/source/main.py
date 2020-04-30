@@ -30,7 +30,7 @@ def packet_collect():
     os.system("sudo chmod 777 " + filePath.csv_path)
 
     #패킷 캡처 명령어
-    os.system("sudo tshark -i wlan0 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype probe-req)\' -a duration:86400")
+    os.system("sudo tshark -i wlan0 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype becon or subtype probe-req)\' -a duration:86400")
     os.system("sudo tshark -r " + 
                         filePath.pf_data_path +
                          " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
@@ -49,7 +49,7 @@ def main():
 
     #맥 어드레스 추출
     mac_list = extract.extract_macAddress()
-
+    
     #probe폴더 생성
     file.make_probeDirectory()
 
@@ -66,7 +66,7 @@ def main():
     #step1 맥 어드레스 별 딕셔너리 초기화
     #mac_dc {key:mac_address value : 패킷리스트}
     mac_dc = macPro.init_macDictionary(mac_list)
-
+    
     #step2 맥별 패킷 데이터 추출
     mac_dc = extract.extract_packetLine(mac_list,mac_dc)
     
