@@ -7,67 +7,50 @@ import filePath
 
 
 #probe 폴더 생성
-def make_probeDirectory():
-    os.system("sudo rm -r "+filePath.probe_path)
+def make_Directory(path):
+    os.system("sudo rm -r "+path)
 
     #맥 어드레스 별로 디렉토리 생성
-    if not os.path.exists(filePath.probe_path):
-        os.mkdir(filePath.probe_path)
-        print("Directory ",filePath.probe_path," created")
+    if not os.path.exists(path):
+        os.mkdir(path)
+        print("Directory ",path," created")
     else:
-        print("Directory ",filePath.probe_path," already exist")
+        print("Directory ",path," already exist")
 
 #mac 폴더 생성
-def make_macDirectory(mac_list):
-    for idx in range(len(mac_list)):
-        if not os.path.exists(filePath.probe_path+mac_list[idx]):
-            os.mkdir(filePath.probe_path+mac_list[idx])
-            print("Directory ",filePath.probe_path,mac_list[idx], " created")
+def make_macDirectory(path,mac_list):
+    for mac_name in mac_list:
+        if not os.path.exists(path+mac_name):
+            os.mkdir(path+mac_name)
+            print("Directory ",path,mac_name, " created")
         else:
-            print("Directory ",filePath.probe_path,mac_list[idx], " already exist")
-
-#시간별 csv파일 생성 및 딕셔너리에 csv파일 이름 리스트 저장
-def make_csvFile(mac_list, mac_csv_dc):
-    csv_nameList = []
-
-       #시간별 csv 파일 생성
-    for idx in range(len(mac_list)):
-        #시, 분 별 csv 파일 이름 생성
-        for hour in range(0,24,1):
-            for minute in range(0,60,10):
-                csv_filename = filePath.probe_path+mac_list[idx]+"/" + mac_list[idx] + "_" + str(hour) + "_" + str(minute) + ".csv"
-                csv_nameList.append(csv_filename)
-
-                #mac키에 csv파일 이름 추가
-                mac_csv_dc[mac_list[idx]].append(csv_filename)
-        
-        #시간별 csv 파일 생성
-        for csvName in csv_nameList:
-            with open(csvName,"w") as f:
-                csv.writer(f)
-    
-    return mac_csv_dc
+            print("Directory ",path,mac_name, " already exist")
 
 #mac별 시퀀스넘버증가량,길이(length),레이블 Feature 모델 csv파일 생성
-def make_csvFeature(mac):
-    csvFeatureFileName = filePath.probe_path+mac+"/"+mac+"_"+"FeatureModle.csv"
+def make_csvFeature(path,mac):
+    csvFeatureFileName = path+mac+"/"+mac+"_"+"FeatureModle.csv"
     with open(csvFeatureFileName,"w") as f:
         writer = csv.writer(f)
         writer.writerow(["delta seq no","length","label"])
 
 #시간별로 csv파일에 저장
-def save_csvFile(mac_list,mac_dc):
- 
+def save_csvFile(path,mac_dc,interval):
+    col = 1
+    if interval==10:
+        col = 1
+    elif interval==3:
+        col = 3
+
     #딕셔너리 k값 순회
     for k in mac_dc.keys():
         value = mac_dc[k]   #딕셔너리 키값에 대한 값(2차원 리스트) 저장
 
         #리스트들 순회
         for i in range(len(value)):
-            second = int(float(value[i][1]))
-            h, m = timeTrans.trans_time(second) # 패킷 데이터의 경과된 시, 분 변환
+            second = int(float(value[i][col]))
+            h, m = timeTrans.trans_time(second,interval) # 패킷 데이터의 경과된 시, 분 변환
             
-            csv_filename = filePath.probe_path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv" #csv 파일 이름 생성
+            csv_filename = path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv" #csv 파일 이름 생성
             
             
             #csv 파일 내용 작성

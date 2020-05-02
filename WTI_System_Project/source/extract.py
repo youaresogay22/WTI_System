@@ -2,33 +2,15 @@ import csv
 import macPro
 import copy
 import filePath
+import pandas as pd
+
 
 
 #맥 어드레스 추출
-def extract_macAddress():
-    with open(filePath.csv_probeRe_path,"r") as f:
-        rdr = csv.reader(f)
-        mac_list = extract_data_header(rdr,"wlan.sa")   #맥 추출
-        mac_list = list(set(mac_list))  #맥 중복 제거
-    return mac_list
-
-# csv 열 데이터 추출
-def extract_data_header(rdr, header):
-    list = []
-    rdr_header = next(rdr)  #csv파일의 헤더
-    idx = 0                            #추출할 인덱스 열 번호    
-        
-    # 추출할 인덱스 열 번호 탐색
-    for i in range(len(rdr_header)):
-        if rdr_header[i] == header:
-            idx = i
-            break  
-        
-    # 열 데이터 추출
-    for line in rdr:
-        list.append(line[idx])
-
-    return list
+def extract_macAddress(path):
+    csv_file = pd.read_csv(path)
+    return list(set(csv_file["wlan.sa"]))
+    
 
 #csv 열 데이터 추출
 def extract_data_index(rdr,idx):
@@ -38,8 +20,14 @@ def extract_data_index(rdr,idx):
     return list
 
 #패킷 라인 추출
-def extract_packetLine(mac_list,mac_dc):
-    with open(filePath.csv_probeRe_path,"r") as f:
+def extract_packetLine(path,mac_list):
+    mac_dc = {}
+
+    #mac별 dictionary 초기화
+    for mac_name in mac_list:
+        mac_dc.update({mac_name:[]})
+    
+    with open(path,"r") as f:
         rdr = csv.reader(f)
         packet_list=[]
 
@@ -47,11 +35,11 @@ def extract_packetLine(mac_list,mac_dc):
         for line in rdr:
             packet_list.append(line);
 
-        for idx in range(len(mac_list)):
+        for mac_name in mac_list:
             #패킷데이터의 해당 단말의 mac이면 리스트에 저장한다.
             for line in packet_list:
-                if line[0]==mac_list[idx]:
-                    mac_dc[mac_list[idx]].append(line)
-
+                if line[0]==mac_name:
+                    mac_dc[mac_name].append(line)
+    
     
     return mac_dc
