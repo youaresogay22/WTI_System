@@ -18,14 +18,3 @@ step 2 명령어 입력
 ```
 sudo python3 main.py
 ```
-
-TensorFlow 설치 및 버전 확인
-```
-$ sudo -H pip3 install --upgrade tensorflow
-$ python3
->>> import tensorflow as tf
->>> tf.__version__
-'1.0.0'
->>>
-```
-출처 : https://www.youtube.com/watch?v=-57Ne86Ia8w&list=PLlMkM4tgfjnLSOjrEJN31gZATbcj_MpUm&index=3ㅅ
