@@ -40,16 +40,16 @@ def preReq_Prepro():
     data_df = DataFrame(csv_file)
     data_df.to_csv(filePath.csv_probeRe_path,sep=",",na_rep="NaN",index=False)
 
-def beacon_prepro():
-    time_list = []               #시퀀스번호를 저장할 리스트
-    ts_0 = 0
+def beacon_prepro(bc_mac_pkt_dc):
+    pkt_list = []
+    time_zero = 0
+    for key in bc_mac_pkt_dc.keys():
+            pkt_list = copy.deepcopy(bc_mac_pkt_dc[key])
+            time_zero = pkt_list[0][2]
+            
+            for idx in range(len(pkt_list)):
+                pkt_list[idx][2] = (int(pkt_list[idx][2]) - int(time_zero))/1000000
+            
+            bc_mac_pkt_dc[key] = copy.deepcopy(pkt_list)    
 
-    csv_file = pd.read_csv(filePath.csv_beacon_path)
-    time_list = list(csv_file["wlan.fixed.timestamp"])
-    
-    ts_0 = time_list[0]
-    
-    for t_i in time_list:
-        print(t_i)
-    #ts_list = [(t_i - ts_0) for t_i in time_list]
-    #print(ts_list)
+    return bc_mac_pkt_dc

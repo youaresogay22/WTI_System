@@ -16,6 +16,7 @@ import delSeqNum
 import extract
 import file
 import filePath
+import copy
 def packet_collect():
 
     #NIC 모니터 모드 설정
@@ -58,16 +59,16 @@ def proReq_process():
 
     #맥별 패킷 데이터 추출
     mac_pkt_dc = extract.extract_packetLine(filePath.csv_probeRe_path,mac_list)
-    
+
     #시간별 csv파일에 패킷데이터 저장
     file.save_csvFile(filePath.probe_path,mac_pkt_dc,10)
 
     #mac별 Feature 추출 모델 파일 생성
     for mac_name in mac_list:
-        file.make_csvFeature(filePath.probe_path,mac_name)
+        file.make_csvFeature(filePath.probe_path,mac_name,"seq")
 
     #디바이스별 Feature 추출 모델 데이터 작성
-    file.init_FeatureFile(mac_csv_dc)
+    file.init_seq_FeatureFile(mac_csv_dc)
 
 #main
 def main():
@@ -81,7 +82,7 @@ def main():
 ##########################################
     bc_mac_list = []
     bc_mac_pkt_dc = {}
-
+    bc_mac_csv_dc = {}
 
     #beacon 폴더 생성
     file.make_Directory(filePath.beacon_path)
@@ -93,18 +94,22 @@ def main():
     file.make_macDirectory(filePath.beacon_path,bc_mac_list)
 
     #mac별 시간으로 구분한 csv파일 생성
-    macPro.make_macCsvFile(filePath.beacon_path,bc_mac_list,3)
+    bc_mac_csv_dc = macPro.make_macCsvFile(filePath.beacon_path,bc_mac_list,3)
 
     #맥별 패킷 데이터 추출
     bc_mac_pkt_dc = extract.extract_packetLine(filePath.csv_beacon_path,bc_mac_list)
 
+    #비콘 시간 수신 데이터 전처리
+    bc_mac_pkt_dc =  prePro.beacon_prepro(bc_mac_pkt_dc)
+        
     #맥별 패킷 데이터 csv에 저장
     file.save_csvFile(filePath.beacon_path,bc_mac_pkt_dc,3)
 
     #mac별 Feature 추출 모델 파일 생성
     for mac_name in bc_mac_list:
-        file.make_csvFeature(filePath.beacon_path,mac_name)
+        file.make_csvFeature(filePath.beacon_path,mac_name,frame="beacon")
 
+    file.init_beacon_FeatureFile(bc_mac_csv_dc)
 if __name__=="__main__":
     main()
 

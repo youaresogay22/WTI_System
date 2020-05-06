@@ -1,1 +1,2 @@
-delta seq no,length,label
+Clock skew,RSS,ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,duration,SSID,MAC Address
+-0.0019517948105408935,-85,1,0,0,0,0,0,0,0,0,3096,olleh_WiFi_1B1E,08:5d:dd:60:1b:22
