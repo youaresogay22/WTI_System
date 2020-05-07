@@ -70,16 +70,8 @@ def proReq_process():
     #디바이스별 Feature 추출 모델 데이터 작성
     file.init_seq_FeatureFile(mac_csv_dc)
 
-#main
-def main():
-    
-    #packet_collect()
 
-    #probe-request data 가공
-    #proReq_process()
- 
-    
-##########################################
+def beacon_process():
     bc_mac_list = []
     bc_mac_pkt_dc = {}
     bc_mac_csv_dc = {}
@@ -110,6 +102,20 @@ def main():
         file.make_csvFeature(filePath.beacon_path,mac_name,frame="beacon")
 
     file.init_beacon_FeatureFile(bc_mac_csv_dc)
+
+#main
+def main():
+    
+    #패킷 수집
+    packet_collect()
+
+    #probe-request data 가공
+    proReq_process()
+ 
+    #beacon frame 가공
+    beacon_process()
+
+ 
 if __name__=="__main__":
     main()
 
