@@ -1,7 +1,7 @@
 """
 title : 무선단말 패킷 데이터 추출 및 가공 시스템
 author : 김용환 (yh.kim951107@gmail.com)
-date : 2020-05-02
+date : 2020-05-17
 detail : 
 todo : 
 beacon frame 의 mac별 timestamp 전처리 필요
