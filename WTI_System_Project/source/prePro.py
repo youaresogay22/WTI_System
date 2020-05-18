@@ -44,13 +44,13 @@ def beacon_prepro(bc_mac_pkt_dc):
     pkt_list = []
     time_zero = 0
     for key in bc_mac_pkt_dc.keys():
-            pkt_list = copy.deepcopy(bc_mac_pkt_dc[key])
-            time_zero = pkt_list[0][2]
+        pkt_list = copy.deepcopy(bc_mac_pkt_dc[key])
+        time_zero = pkt_list[0][2]
             
-            for idx in range(len(pkt_list)):
-                pkt_list[idx][2] = (int(pkt_list[idx][2]) - int(time_zero))/1000000
-            
-            bc_mac_pkt_dc[key] = copy.deepcopy(pkt_list)    
+        for idx in range(len(pkt_list)):
+            pkt_list[idx][2] = (int(pkt_list[idx][2]) - int(time_zero))/1000000
+
+        bc_mac_pkt_dc[key] = copy.deepcopy(pkt_list)    
 
     return bc_mac_pkt_dc
 

@@ -1,8 +1,12 @@
 
 import csv
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
 import numpy as np
 import prePro
+import pandas as pd
 
 #todo x_train 데이터를 모아야함
 def make_timeRelative_list(csvFile):
@@ -47,3 +51,18 @@ def linear_regreesion(x_train,y_train):
     
     
     return line_fitter.coef_
+
+##############################################################################
+#맥별로 들어있는 feature modeld을 참조하여 데이터행을 임시 리스트에 저장하여 반혼
+def get_proReq_FeatureModel(name):
+    csv = pd.read_csv(name)
+
+    x_train = np.array(csv[["delta seq no","length"]])
+    y_train = np.array(csv["label"])
+    
+    return x_train, y_train
+
+def random_forest_model():
+    x_train, x_test, y_train, y_test = train_test_split(data,target,test_size=0.3,random_state=0)
+    rf = RandomForestClassifier(n_estimators=100,random_state=0)
+    rf.fit(x_train,y_train)

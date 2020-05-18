@@ -63,6 +63,7 @@ def save_csvFile(path,mac_dc,interval):
 def init_seq_FeatureFile(mac_csv_dc):
     time_list = []          #수신시간 리스트
     seqNum_list = []    #시퀀스넘버 리스트
+    csv_fm_list = []
     W = 0                     #기울기
     label = 0                 #무선단말 레이블
 
@@ -82,6 +83,8 @@ def init_seq_FeatureFile(mac_csv_dc):
             
             #Feature 추출 모델 이름 생성
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv"
+            #save the featuremodel.csv name
+            csv_fm_list.append(csv_fm)
 
             #길이 저장
             with open(csvFile,"r") as f:
@@ -94,8 +97,12 @@ def init_seq_FeatureFile(mac_csv_dc):
                 writer.writerow(feature_lline)
             
             label += 1
+
+    return csv_fm_list
+
 #beacon frame value 초기화
 def init_beacon_FeatureFile(bc_mac_csv_dc):
+    csv_fm_list = []    #csv featuremodel names
     bc_list = []
     x_train = []
     y_train = []
@@ -127,7 +134,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                         rss_list.append(int(bc_list[idx][5]))
                 if x_train and y_train:
                     #clock sycle
-                    W = float(delSeqNum.linear_regreesion(x_train,y_train))
+                    W = float(machine_learn.linear_regreesion(x_train,y_train))
                     
                     #RSS
                     rss_value = Counter(rss_list)
@@ -147,6 +154,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                     
                     #Feature 추출 모델 이름 생성
                     csv_fm = filePath.beacon_path + key + "/" + key + "_FeatureModle.csv"
+                    csv_fm_list.append(csv_fm)
                     with open(csv_fm,"a") as f:
                         feature_lline = [W,rss_value,ch_list[0],ch_list[1],ch_list[2],ch_list[3],ch_list[4],ch_list[5],ch_list[6],ch_list[7],ch_list[8],duration,ssid,mac_addr]
                         writer = csv.writer(f)
@@ -157,6 +165,8 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                 bc_list = []
                 rss_list = []
                 ch_list= [0 for _ in range(1,10)]
+
+    return csv_fm_list
 #최빈값 탐색
 def Counter(x):
     dictionary = {}
