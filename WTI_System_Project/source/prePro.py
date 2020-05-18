@@ -1,5 +1,4 @@
 import csv
-import extract
 import copy
 import filePath
 import pandas as pd
@@ -40,6 +39,7 @@ def preReq_Prepro():
     data_df = DataFrame(csv_file)
     data_df.to_csv(filePath.csv_probeRe_path,sep=",",na_rep="NaN",index=False)
 
+#beacon frame 전처리
 def beacon_prepro(bc_mac_pkt_dc):
     pkt_list = []
     time_zero = 0
@@ -53,3 +53,55 @@ def beacon_prepro(bc_mac_pkt_dc):
             bc_mac_pkt_dc[key] = copy.deepcopy(pkt_list)    
 
     return bc_mac_pkt_dc
+
+
+#초를 입력받아 시간과 분으로 반환한다.
+def trans_time(second,interval):
+    #시간, 분 계산
+    sec = second
+
+    h = int(sec // 3600)
+    sec = int(sec%3600)
+
+    m = int(sec//60)
+    m = (m//interval)*interval
+    
+    return str(h), str(m)
+
+
+#맥 어드레스 추출
+def extract_macAddress(path):
+    csv_file = pd.read_csv(path)
+    return list(set(csv_file["wlan.sa"]))
+    
+
+#csv 열 데이터 추출
+def extract_data_index(rdr,idx):
+    list = []
+    for line in rdr:
+        list.append(line[idx])
+    return list
+
+#패킷 라인 추출
+def extract_packetLine(path,mac_list):
+    mac_dc = {}
+
+    #mac별 dictionary 초기화
+    for mac_name in mac_list:
+        mac_dc.update({mac_name:[]})
+    
+    with open(path,"r") as f:
+        rdr = csv.reader(f)
+        packet_list=[]
+
+        #rdr을 packet_list으로 복사
+        for line in rdr:
+            packet_list.append(line);
+
+        for mac_name in mac_list:
+            #패킷데이터의 해당 단말의 mac이면 리스트에 저장한다.
+            for line in packet_list:
+                if line[0]==mac_name:
+                    mac_dc[mac_name].append(line)
+    
+    return mac_dc

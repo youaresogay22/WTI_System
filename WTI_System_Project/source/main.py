@@ -5,24 +5,22 @@ date : 2020-05-17
 detail : 
 todo : 
 beacon frame 의 mac별 timestamp 전처리 필요
-
+sudo dumpcap -i wlan1 -w /home/user/Desktop/git/WTI_System_Project/source/pcapng_folder/data.pcapng 'wlan_type mgt and (wlan_subtype beacon or wlan_subtype probe-req)' -a duration:86400
 """
 import csv
 import os
-import macPro
 import prePro
-import timeTrans
-import delSeqNum
-import extract
+import machine_learn
 import file
 import filePath
 import copy
+
 def packet_collect():
 
     #NIC 모니터 모드 설정
-    os.system("sudo ifconfig wlan0 down")
-    os.system("sudo iwconfig wlan0 mode monitor")
-    os.system("sudo ifconfig wlan0 up")
+    os.system("sudo ifconfig wlan1 down")
+    os.system("sudo iwconfig wlan1 mode monitor")
+    os.system("sudo ifconfig wlan1 up")
 
     #디렉터리 생성
 
@@ -31,7 +29,8 @@ def packet_collect():
     os.system("sudo chmod 777 " + filePath.csv_path)
 
     #패킷 캡처 명령어
-    os.system("sudo tshark -i wlan0 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\' -a duration:86400")
+    os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\' -a duration:86400")
+    #os.system("sudo dumpcap -i wlan1 -w /home/user/Desktop/git/WTI_System_Project/source/pcapng_folder/data.pcapng 'wlan_type mgt and (wlan_subtype beacon or wlan_subtype probe-req)' -a duration:86400")
     os.system("sudo tshark -r " + 
                         filePath.pf_data_path +
                          " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
@@ -46,7 +45,7 @@ def proReq_process():
     prePro.preReq_Prepro()
 
     #맥 어드레스 추출
-    mac_list = extract.extract_macAddress(filePath.csv_probe_path)
+    mac_list = prePro.extract_macAddress(filePath.csv_probe_path)
     
     #probe 폴더 생성
     file.make_Directory(filePath.probe_path)
@@ -55,10 +54,10 @@ def proReq_process():
     file.make_macDirectory(filePath.probe_path,mac_list)
     
     #mac별 csv 파일이름 리스트 생성
-    mac_csv_dc = macPro.make_macCsvFile(filePath.probe_path,mac_list,10)
+    mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10)
 
     #맥별 패킷 데이터 추출
-    mac_pkt_dc = extract.extract_packetLine(filePath.csv_probeRe_path,mac_list)
+    mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list)
 
     #시간별 csv파일에 패킷데이터 저장
     file.save_csvFile(filePath.probe_path,mac_pkt_dc,10)
@@ -80,16 +79,16 @@ def beacon_process():
     file.make_Directory(filePath.beacon_path)
 
     #beacon.csv의 mac 리스트 생성
-    bc_mac_list = extract.extract_macAddress(filePath.csv_beacon_path)
+    bc_mac_list = prePro.extract_macAddress(filePath.csv_beacon_path)
     
     #mac별  폴더 생성
     file.make_macDirectory(filePath.beacon_path,bc_mac_list)
 
     #mac별 시간으로 구분한 csv파일 생성
-    bc_mac_csv_dc = macPro.make_macCsvFile(filePath.beacon_path,bc_mac_list,3)
+    bc_mac_csv_dc = file.make_macCsvFile(filePath.beacon_path,bc_mac_list,3)
 
     #맥별 패킷 데이터 추출
-    bc_mac_pkt_dc = extract.extract_packetLine(filePath.csv_beacon_path,bc_mac_list)
+    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.csv_beacon_path,bc_mac_list)
 
     #비콘 시간 수신 데이터 전처리
     bc_mac_pkt_dc =  prePro.beacon_prepro(bc_mac_pkt_dc)
@@ -107,7 +106,7 @@ def beacon_process():
 def main():
     
     #패킷 수집
-    packet_collect()
+    #packet_collect()
 
     #probe-request data 가공
     proReq_process()

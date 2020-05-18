@@ -1,11 +1,8 @@
 import os
 import csv
-import timeTrans
-import delSeqNum
+import machine_learn
 import filePath
-
-
-
+import prePro
 
 #probe 폴더 생성
 def make_Directory(path):
@@ -52,7 +49,7 @@ def save_csvFile(path,mac_dc,interval):
         #리스트들 순회
         for i in range(len(value)):
             second = int(float(value[i][col]))
-            h, m = timeTrans.trans_time(second,interval) # 패킷 데이터의 경과된 시, 분 변환
+            h, m = prePro.trans_time(second,interval) # 패킷 데이터의 경과된 시, 분 변환
             
             csv_filename = path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv" #csv 파일 이름 생성
             
@@ -74,14 +71,14 @@ def init_seq_FeatureFile(mac_csv_dc):
         #시간별 csv파일을 참조하여 시퀀스 넘버 증가량, 길이, label 설정
         for idx in range(len(value)):
             csvFile = value[idx]           
-            time_list = delSeqNum.make_timeRelative_list(csvFile)
-            seqNum_list = delSeqNum.make_seqNumberList(csvFile)
+            time_list = machine_learn.make_timeRelative_list(csvFile)
+            seqNum_list = machine_learn.make_seqNumberList(csvFile)
             
             if not time_list or not seqNum_list:
                 continue
             else:
                 #시퀀스 넘버 기울기를 구하는 머신러닝 생성
-                W = float(delSeqNum.linear_regreesion(time_list,seqNum_list))
+                W = float(machine_learn.linear_regreesion(time_list,seqNum_list))
             
             #Feature 추출 모델 이름 생성
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv"
@@ -174,3 +171,32 @@ def Counter(x):
         if value == most:
                 result = key
     return result
+
+#mac 별 csv 파일 생성
+def make_macCsvFile(path,mac_list,m_interval):
+    mac_csv_dc = {}
+    csv_nameList = []
+
+    #mac맥 csv파일리스트 맵의 키 설정
+    for mac_name in mac_list:
+        mac_csv_dc.update({mac_name:[]})
+
+    #시간별 csv 파일 생성
+    for mac_name in mac_list:
+        #시, 분 별 csv 파일 이름 생성
+        for hour in range(0,24,1):
+            for minute in range(0,60,m_interval):
+                csv_filename = path+mac_name+"/" + mac_name + "_" + str(hour) + "_" + str(minute) + ".csv"
+                csv_nameList.append(csv_filename)
+
+                #mac키에 csv파일 이름 추가
+                mac_csv_dc[mac_name].append(csv_filename)
+        
+        
+    #시간별 csv 파일 생성
+    for csvName in csv_nameList:
+        with open(csvName,"w") as f:
+            csv.writer(f)
+        
+
+    return mac_csv_dc
