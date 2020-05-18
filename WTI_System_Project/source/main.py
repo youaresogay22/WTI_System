@@ -106,7 +106,7 @@ def beacon_process():
 def main():
     
     #패킷 수집
-    #packet_collect()
+    packet_collect()
 
     #probe-request data 가공
     proReq_process()
