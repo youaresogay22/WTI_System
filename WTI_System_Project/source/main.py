@@ -1,11 +1,9 @@
 """
 title : 무선단말 패킷 데이터 추출 및 가공 시스템
 author : 김용환 (yh.kim951107@gmail.com)
-date : 2020-05-18
+date : 2020-05-21
 detail : 
-todo : 
-    featuremodel datas 훈련데이터 가공이 필요함
-sudo dumpcap -i wlan1 -w /home/user/Desktop/git/WTI_System_Project/source/pcapng_folder/data.pcapng 'wlan_type mgt and (wlan_subtype beacon or wlan_subtype probe-req)' -a duration:86400
+todo : becon frame에 대한 훈련데이터 생성 소스 해야함
 """
 import csv
 import os
@@ -29,8 +27,8 @@ def packet_collect():
     os.system("sudo chmod 777 " + filePath.csv_path)
 
     #패킷 캡처 명령어
-    #os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\' -a duration:86400")
-    os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype probe-req)\' -a duration:86400")
+    os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\' -a duration:86400")
+    #os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype probe-req)\' -a duration:86400")
     os.system("sudo tshark -r " + 
                         filePath.pf_data_path +
                          " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
@@ -40,7 +38,10 @@ def proReq_process():
     mac_list = []         #추출된 맥 리스트
     mac_pkt_dc = {}       #맥어드레스 딕셔너리, key:mac address value: 해당 맥 패킷데이터 리스트
     mac_csv_dc = {}       #mac별 csv파일 리스트
-    csv_fm_list = []
+    csv_fm_list = []      #mac별 featuremodel 파일 리스트
+    feat_x_train = []     #random forest feature x_train list
+    feat_y_train = []     #random forest feature y_train list
+
    #시퀀스번호 및 길이 전처리
     prePro.preReq_Prepro()
 
@@ -69,13 +70,10 @@ def proReq_process():
     #디바이스별 Feature 추출 모델 데이터 작성 및 mac별 featuremodel file 리스트 반환받음
     csv_fm_list = file.init_seq_FeatureFile(mac_csv_dc)
 
-    feat_x_train = []
-    feat_y_train = []
-    for name in csv_fm_list:
-        x_train_part, y_train_part = machine_learn.get_proReq_FeatureModel(name)
-        feat_x_train.append(x_train_part)
-        feat_y_train.append(y_train_part)
+    #probe request 훈련 데이터 저장
+    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list)
 
+    machine_learn.random_forest_model(feat_x_train,feat_y_train)
 
 def beacon_process():
     bc_mac_list = []
@@ -121,7 +119,7 @@ def main():
     proReq_process()
  
     #beacon frame 가공
-#    beacon_process()
+    beacon_process()
 
  
 if __name__=="__main__":

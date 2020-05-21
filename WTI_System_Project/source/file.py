@@ -84,7 +84,8 @@ def init_seq_FeatureFile(mac_csv_dc):
             #Feature 추출 모델 이름 생성
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv"
             #save the featuremodel.csv name
-            csv_fm_list.append(csv_fm)
+            if csv_fm not in csv_fm_list:
+                csv_fm_list.append(csv_fm)
 
             #길이 저장
             with open(csvFile,"r") as f:
@@ -95,9 +96,8 @@ def init_seq_FeatureFile(mac_csv_dc):
                 feature_lline = [W,length,label]
                 writer = csv.writer(f)
                 writer.writerow(feature_lline)
-            
-            label += 1
-
+                   
+        label += 1
     return csv_fm_list
 
 #beacon frame value 초기화
