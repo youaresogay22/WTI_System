@@ -154,7 +154,10 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                     
                     #Feature 추출 모델 이름 생성
                     csv_fm = filePath.beacon_path + key + "/" + key + "_FeatureModle.csv"
-                    csv_fm_list.append(csv_fm)
+                    
+                    if csv_fm not in csv_fm_list:
+                        csv_fm_list.append(csv_fm)
+
                     with open(csv_fm,"a") as f:
                         feature_lline = [W,rss_value,ch_list[0],ch_list[1],ch_list[2],ch_list[3],ch_list[4],ch_list[5],ch_list[6],ch_list[7],ch_list[8],duration,ssid,mac_addr]
                         writer = csv.writer(f)

@@ -72,6 +72,7 @@ def get_proReq_FeatureModel(name):
 def get_proReq_train_data(csv_fm_list):
     feat_x_train = []
     feat_y_train = []
+    #맥별로 들어있는 featuremodel.csv file을 참조하여 x데이터와 y데이터를 리스트에 저장한다.
     for name in csv_fm_list:
         x_train, y_train = get_proReq_FeatureModel(name)
         
@@ -79,7 +80,29 @@ def get_proReq_train_data(csv_fm_list):
             feat_x_train.append(data)
         for data in y_train:
             feat_y_train.append(data[0]) #[0] => 0
+
     return feat_x_train, feat_y_train
+
+#ssid, mac addr을 label 0~n-1로 매핑한다.
+def y_variable_mapping():
+    print("test")
+
+def get_becon_FeatureModel(name):
+    x_train = []
+    y_train = []
+
+    with open(name,"r") as f:
+        rdr = csv.reader(f)
+        next(rdr,None) #header skip
+        for row in rdr:
+            print(row)
+
+def get_becon_train_data(csv_fm_list):
+    feat_x_train = []
+    feat_y_train = []
+
+    for name in csv_fm_list:
+        get_becon_FeatureModel(name)
 
 def random_forest_model(data, target):
     x_train, x_test, y_train, y_test = train_test_split(data,target,test_size=0.3,random_state=0)

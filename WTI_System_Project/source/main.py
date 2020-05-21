@@ -108,6 +108,8 @@ def beacon_process():
 
     bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc)
 
+    machine_learn.get_becon_train_data(bc_csv_fm_list)
+    
 
 #main
 def main():
@@ -116,7 +118,7 @@ def main():
 #    packet_collect()
 
     #probe-request data 가공
-    proReq_process()
+#    proReq_process()
  
     #beacon frame 가공
     beacon_process()
