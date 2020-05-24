@@ -87,24 +87,46 @@ def get_proReq_train_data(csv_fm_list):
 def y_variable_mapping():
     print("test")
 
-def get_becon_FeatureModel(name):
+def get_becon_FeatureModel(name,label):
     x_train = []
     y_train = []
-
+    
     with open(name,"r") as f:
         rdr = csv.reader(f)
         next(rdr,None) #header skip
         for row in rdr:
-            print(row)
+            #x_train 추출 및 가공
+            data = row[0:2]
+            channel = [str(row[2:11].index("1") + 1)] #채널을 찾는다.
+            duration = [row[11]]
+            total_list = data + channel + duration
+            x_train.append(total_list)
+            y_train.append(label)
+            #key = tuple(row[12:14]) #(ssid, mac_addr)
+            #feat_y_train[key] = label
 
+    return x_train ,y_train
 def get_becon_train_data(csv_fm_list):
     feat_x_train = []
     feat_y_train = []
-
+#    feat_y_train = {}
+    label = 0
     for name in csv_fm_list:
-        get_becon_FeatureModel(name)
+        x_train, y_train = get_becon_FeatureModel(name,label)
+        label += 1
+
+        for data in x_train:
+            feat_x_train.append(data)
+        for data in y_train:
+            feat_y_train.append(data)
+    
+    return feat_x_train, feat_y_train
 
 def random_forest_model(data, target):
     x_train, x_test, y_train, y_test = train_test_split(data,target,test_size=0.3,random_state=0)
     rf = RandomForestClassifier(n_estimators=100,random_state=0)
     rf.fit(x_train,y_train)
+
+    #accuracy_score test
+    #y_pred = rf.predict(x_test)
+    #print("accuracy score :", metrics.accuracy_score(y_test,y_pred))

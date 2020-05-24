@@ -9,4 +9,3 @@ csv_path = path + "/csv"
 csv_probe_path = csv_path + "/probe.csv"
 csv_probeRe_path = csv_path + "/probe_re.csv"
 csv_beacon_path = csv_path + "/beacon.csv"
-

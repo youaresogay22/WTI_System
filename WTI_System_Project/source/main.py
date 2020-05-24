@@ -28,7 +28,6 @@ def packet_collect():
 
     #패킷 캡처 명령어
     os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\' -a duration:86400")
-    #os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype probe-req)\' -a duration:86400")
     os.system("sudo tshark -r " + 
                         filePath.pf_data_path +
                          " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
@@ -108,17 +107,19 @@ def beacon_process():
 
     bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc)
 
-    machine_learn.get_becon_train_data(bc_csv_fm_list)
+    feat_x_train, feat_y_train = machine_learn.get_becon_train_data(bc_csv_fm_list)
+
+    machine_learn.random_forest_model(feat_x_train,feat_y_train)
     
 
 #main
 def main():
     
     #패킷 수집
-#    packet_collect()
+    packet_collect()
 
     #probe-request data 가공
-#    proReq_process()
+    proReq_process()
  
     #beacon frame 가공
     beacon_process()
