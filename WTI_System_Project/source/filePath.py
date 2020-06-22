@@ -1,3 +1,11 @@
+"""
+title : file path variables
+author : YONG HWAN KIM (yh.kim951107@gmail.com)
+date : 2020-06-22
+detail : 
+todo :
+"""
+
 import os 
 
 path = os.getcwd()

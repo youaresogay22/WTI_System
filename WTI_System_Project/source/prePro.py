@@ -1,107 +1,161 @@
+"""
+title : preprocessor about frame
+author : YONG HWAN KIM (yh.kim951107@gmail.com)
+date : 2020-06-22
+detail : 
+todo :
+"""
+
 import csv
 import copy
 import filePath
 import pandas as pd
-from pandas import DataFrame
 import math
 
-#시퀀스번호 전처리
-def preReq_Prepro():
-    seq_list = []               #시퀀스번호를 저장할 리스트
-    seq_temp_list = []    #가공된 시퀀스 번호를 저장할 임시 리스트
-    length_list = []          #패킷 길이 리스트
-    ssid_list = []              #ssid 리스트
-    cycle=0             #사이클
+from pandas import DataFrame
 
-    #csv 파일 오픈
+"""preprocessor wlan.seq
+convert 0~4096 to 0~infinite
+"""
+def preReq_Prepro():
+    seq_list = []               #wlan.seq
+    seq_temp_list = []    #temp wlan.seq
+    length_list = []          #frame.len
+    ssid_list = []              #wlan.ssid
+    cycle=0                     #cycle count
+
+    """get probe-request data
+    save the data to list about wlan.seq, frame.len, wlan.ssid
+    """
     csv_file = pd.read_csv(filePath.csv_probe_path)
     seq_list = list(csv_file["wlan.seq"])
     length_list = list(csv_file["frame.len"])
     ssid_list = list(csv_file["wlan.ssid"])
-    seq_temp_list = copy.deepcopy(seq_list)
+    seq_temp_list = copy.deepcopy(seq_list) #copy wlan.seq list
     
-    #반복문을 통하여 시퀀스번호, 길이를 가공
-    for idx in range(len(seq_list)):
+    for idx in range(len(seq_list)): #preprocess the wlan.seq
         if idx!=0 and int(seq_list[idx])<int(seq_list[idx-1]):
             cycle = cycle + 1
         seq_temp_list[idx] = int(seq_list[idx]) + (cycle*4096)
 
-        #ssid가 존재하면 패킷 길이에서 ssid를 뺀다.
-        if type(ssid_list[idx]) is str:
+        if type(ssid_list[idx]) is str: # check the null ssid
             length_list[idx] = int(length_list[idx]) - len(ssid_list[idx])
 
-    #seq_list에 복사
     seq_list = copy.deepcopy(seq_temp_list)
     csv_file["wlan.seq"] = seq_list
     csv_file["frame.len"] = length_list
     
-    #csv 작성
     data_df = DataFrame(csv_file)
-    data_df.to_csv(filePath.csv_probeRe_path,sep=",",na_rep="NaN",index=False)
+    data_df.to_csv(filePath.csv_probeRe_path,sep=",",na_rep="NaN",index=False) #write csv file
 
-#beacon frame 전처리
-def beacon_prepro(bc_mac_pkt_dc):
-    pkt_list = []
-    time_zero = 0
-    for key in bc_mac_pkt_dc.keys():
-        pkt_list = copy.deepcopy(bc_mac_pkt_dc[key])
-        time_zero = pkt_list[0][2]
+"""preprocessor becon-frame data
+process the wlan.fixed.timestamp data
+
+params
+bc_mac_csv_dc : key:wlan.sa value: csv file names
+"""
+def beacon_prepro(bc_mac_csv_dc):
+    csv_list = []   #csv file names
+    bc_list=[]      #becon-frame datas
+    time_zero = 0   #0th wlan.fixed.timestamp
+
+    for key in bc_mac_csv_dc.keys():        
+        csv_list = copy.deepcopy(bc_mac_csv_dc[key])
+        
+        for csv_file in csv_list:
             
-        for idx in range(len(pkt_list)):
-            pkt_list[idx][2] = (int(pkt_list[idx][2]) - int(time_zero))/1000000
+            with open(csv_file,"r") as f:
+                rdr = csv.reader(f)
 
-        bc_mac_pkt_dc[key] = copy.deepcopy(pkt_list)    
+                #get 0th timestamp and process timestamp
+                try:
+                    line = next(rdr)
+                    time_zero = line[2]                                                 #save timestamp
+                    line[2] = (int(line[2]) - int(time_zero))/1000000   #process timestamp
+                    bc_list.append(line)                                                #add the updated becon-frame
+                except:
+                    continue
 
-    return bc_mac_pkt_dc
+                #process the other becon-frame timestamp 
+                for line in rdr:
+                    line[2] = (int(line[2]) - int(time_zero))/1000000
+                    bc_list.append(line)
 
+            with open(csv_file,"w") as f:
+                writer = csv.writer(f)
+                writer.writerows(bc_list) 
+            bc_list = []    #초기화
 
-#초를 입력받아 시간과 분으로 반환한다.
-def trans_time(second,interval):
+"""get hour,minute
+params
+sec : second
+interval : probe-request => 10, becon-frame => 3
+
+return
+hour, minute
+"""
+def trans_time(sec,interval):
     #시간, 분 계산
-    sec = second
+    s = sec
 
-    h = int(sec // 3600)
-    sec = int(sec%3600)
+    h = int(s // 3600)
+    s = int(s%3600)
 
-    m = int(sec//60)
+    m = int(s//60)
     m = (m//interval)*interval
     
     return str(h), str(m)
 
+"""extract wlan.sa
 
-#맥 어드레스 추출
+params
+path : file path to extract wlan.sa
+"""
 def extract_macAddress(path):
     csv_file = pd.read_csv(path)
-    return list(set(csv_file["wlan.sa"]))
+    return list(set(csv_file["wlan.sa"])) #unique and list
     
+"""extract column data
+extaract column data in csv file
 
-#csv 열 데이터 추출
+params
+rdr : readed csv file
+idx : index
+
+return
+list : column datas
+"""
 def extract_data_index(rdr,idx):
     list = []
     for line in rdr:
         list.append(line[idx])
     return list
 
-#패킷 라인 추출
+"""extract frame data
+params
+path : file path
+mac_list : wlan.sa list
+
+return
+mac_dc : key:wlan.sa value: frame
+"""
 def extract_packetLine(path,mac_list):
     mac_dc = {}
 
-    #mac별 dictionary 초기화
-    for mac_name in mac_list:
+    for mac_name in mac_list:   # dictionary initionize
         mac_dc.update({mac_name:[]})
     
     with open(path,"r") as f:
         rdr = csv.reader(f)
         packet_list=[]
 
-        #rdr을 packet_list으로 복사
-        for line in rdr:
+        
+        for line in rdr: # append from rdr to packet_list
             packet_list.append(line);
 
-        for mac_name in mac_list:
-            #패킷데이터의 해당 단말의 mac이면 리스트에 저장한다.
+        for mac_name in mac_list: # classifiy frame data
             for line in packet_list:
-                if line[0]==mac_name:
+                if line[0]==mac_name: #check the wlan.sa
                     mac_dc[mac_name].append(line)
     
     return mac_dc

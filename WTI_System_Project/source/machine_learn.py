@@ -1,48 +1,77 @@
+"""
+title : mechine learing moudle
+author : YONG HWAN KIM (yh.kim951107@gmail.com)
+date : 2020-06-22
+detail : 
+todo :
+"""
 
 import csv
+import numpy as np
+import prePro
+import pandas as pd
+
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
-import numpy as np
-import prePro
-import pandas as pd
+"""make training data
+make the time data list for the sequence number delta
 
-#todo x_train 데이터를 모아야함
-def make_timeRelative_list(csvFile):
-    time_list = []
+parmas
+csvFile : file to open for the frame.time_relative data
+
+return
+time_list : frame.time_relative data list in csvFile
+"""
+def make_timeRelative_list(csvFile):    
     with open(csvFile,"r") as f:
         rdr = csv.reader(f)
-        temp_timelist = prePro.extract_data_index(rdr,1)
-        
-        for time in temp_timelist:
-            time_list.append(time)
+        time_list = prePro.extract_data_index(rdr,1) #extract frame.time_relative list
+
     return time_list
 
-#시퀀스 넘버 증가량 리스트를 만든다.
+
+"""make training data
+make the sequence number data list for the sequence number delta
+
+params
+csvFile : file to open for the wlan.seq data
+
+return
+seqNum_list : wlan.seq data list
+"""
 def make_seqNumberList(csvFile):
-    seqNum_0 = 0
+    seqNum_0 = 0    # 0th wlan.seq data
     seqNum_list = []
     
     with open(csvFile,"r") as f:
         rdr = csv.reader(f)
-        temp_seqNum_list = prePro.extract_data_index(rdr,2)  
+        temp_seqNum_list = prePro.extract_data_index(rdr,2) #extract wlan.seq data
 
-        if temp_seqNum_list!=[]:
+        if temp_seqNum_list!=[]: # is not empty list
             seqNum_0 = float(temp_seqNum_list[0])
             for idx in range(len(temp_seqNum_list)):
                     seqNum_list.append((float(temp_seqNum_list[idx]) - seqNum_0))
-            
     
     return seqNum_list
 
-#문자열 실수 리스트를 정수형 리스트로 변경
-def train_preProcessor(train):
-    for idx in range(len(train)):
-        train[idx] = int(float(train[idx]))
-
 #선형 모델 기울기 반환
+"""get delta
+params
+probe-request
+x_train : frame.time_relative
+y_train : wlan.seq
+
+becon-frame
+x_train : wlan.fixed.timestamp list
+y_train : i th frame.time_relative - 0th frame.time_relative) - i th wlan.fixed.timestamp, data list
+
+return
+probe-request : sequence number delta
+becon-frame : clock skew
+"""
 def linear_regreesion(x_train,y_train):
     X = np.array(x_train).astype(np.float64).reshape(-1,1)
     y = np.array(y_train).astype(np.float64)
@@ -50,11 +79,12 @@ def linear_regreesion(x_train,y_train):
     line_fitter = LinearRegression()
     line_fitter.fit(X,y)
     
-    
     return line_fitter.coef_
 
 ##############################################################################
-#맥별로 들어있는 feature modeld을 참조하여 데이터행을 임시 리스트에 저장하여 반혼
+"""get feature data
+open the feature file and then input to x_train, y_train
+"""
 def get_proReq_FeatureModel(name):
     x_train = []
     y_train = []
@@ -67,26 +97,41 @@ def get_proReq_FeatureModel(name):
             y_train.append(list(map(int,row[-1])))  # conver all str list to integer list
 
     return x_train, y_train
+ 
+"""get training data
+get probe-request training data to use the random forest
 
-#random forest에 사용할 훈련 데이터 가공 (probe request) 
+parmas
+csv_fm_list : feature csv file names
+
+return
+feat_x_train : sequence number delta, length
+feat_y_train : label
+"""
 def get_proReq_train_data(csv_fm_list):
     feat_x_train = []
     feat_y_train = []
-    #맥별로 들어있는 featuremodel.csv file을 참조하여 x데이터와 y데이터를 리스트에 저장한다.
+    
+    #get feature data and then save the training data
     for name in csv_fm_list:
         x_train, y_train = get_proReq_FeatureModel(name)
         
-        for data in x_train:
+        for data in x_train: #reduce the x_train data
             feat_x_train.append(data)
-        for data in y_train:
+        for data in y_train: #reduce the y_train data
             feat_y_train.append(data[0]) #[0] => 0
 
     return feat_x_train, feat_y_train
 
-#ssid, mac addr을 label 0~n-1로 매핑한다.
-def y_variable_mapping():
-    print("test")
+"""get feature data
+get x_train, y_train data to use the random forest model
 
+params
+name : feature csv file name
+label : AP label
+
+todo : 비콘 프레임 y_train으로 ssid와 mac주소 매핑이 필요
+"""
 def get_becon_FeatureModel(name,label):
     x_train = []
     y_train = []
@@ -94,18 +139,26 @@ def get_becon_FeatureModel(name,label):
     with open(name,"r") as f:
         rdr = csv.reader(f)
         next(rdr,None) #header skip
-        for row in rdr:
-            #x_train 추출 및 가공
+
+        for row in rdr: #extract and process the x_train
             data = row[0:2]
-            channel = [str(row[2:11].index("1") + 1)] #채널을 찾는다.
+            channel = [str(row[2:11].index("1") + 1)] #find the channel
             duration = [row[11]]
             total_list = data + channel + duration
             x_train.append(total_list)
             y_train.append(label)
-            #key = tuple(row[12:14]) #(ssid, mac_addr)
-            #feat_y_train[key] = label
-
+    
     return x_train ,y_train
+
+"""get becon-frame training data
+
+params
+csv_fm_list : feature csv file names
+
+return
+feat_x_train : clock skew, RSS, channel, duration,
+feat_y_train : ssid,mac address
+"""
 def get_becon_train_data(csv_fm_list):
     feat_x_train = []
     feat_y_train = []
@@ -122,6 +175,18 @@ def get_becon_train_data(csv_fm_list):
     
     return feat_x_train, feat_y_train
 
+"""create device identify model
+model type is random forest model
+
+params
+probe-request
+data : sequence number delta, length
+target : label
+
+becon-frame
+data : clock skew, RSS, channel, duration,
+target : ssid,mac address
+"""
 def random_forest_model(data, target):
     x_train, x_test, y_train, y_test = train_test_split(data,target,test_size=0.3,random_state=0)
     rf = RandomForestClassifier(n_estimators=100,random_state=0)

@@ -1,10 +1,11 @@
 """
-title : 무선단말 패킷 데이터 추출 및 가공 시스템
-author : 김용환 (yh.kim951107@gmail.com)
-date : 2020-05-21
+title : Wireless terminal identification system
+author : YONG HWAN KIM (yh.kim951107@gmail.com)
+date : 2020-06-22
 detail : 
-todo : becon frame에 대한 훈련데이터 생성 소스 해야함
+todo :
 """
+
 import csv
 import os
 import prePro
@@ -15,116 +16,124 @@ import copy
 
 def packet_collect():
 
-    #NIC 모니터 모드 설정
+    """Set the NIC monitor mode
+    Set the NIC(Network Interface Card) from managed mode to monitor mode
+    """
     os.system("sudo ifconfig wlan1 down")
     os.system("sudo iwconfig wlan1 mode monitor")
     os.system("sudo ifconfig wlan1 up")
 
-    #디렉터리 생성
+    """Make the Directory
+    Make the pcapng_folder, csv Directory 
+    """
+    os.system("sudo mkdir "
+                    +filePath.pf_path)
+    os.system("sudo mkdir "
+                    +filePath.csv_path)
+    os.system("sudo chmod 777 "
+                    +filePath.csv_path)
 
-    os.system("sudo mkdir " +filePath.pf_path)
-    os.system("sudo mkdir " +filePath.csv_path)
-    os.system("sudo chmod 777 " + filePath.csv_path)
-
-    #패킷 캡처 명령어
-    os.system("sudo tshark -i wlan1 -w " + filePath.pf_data_path + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\' -a duration:86400")
-    os.system("sudo tshark -r " + 
-                        filePath.pf_data_path +
-                         " -Y \"wlan.fc.type_subtype==0x0004\" -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > " + filePath.csv_probe_path)
-    os.system("sudo tshark -r "+filePath.pf_data_path + " -Y \"wlan.fc.type_subtype==0x0008\" -T fields -e wlan.sa -e wlan.ssid -e wlan.fixed.timestamp -e frame.time_relative -e wlan.ds.current_channel -e wlan_radio.signal_dbm -e wlan_radio.duration -E separator=, -E quote=n -E header=y > "+filePath.csv_beacon_path)
+    """Capture the packet
+    step1 Scan the becon frame or probe-request
+    step2 select the frame field
+    step3 save the becon frame and probe-request
+    """
+    os.system("sudo tshark -i wlan1 -w "
+                    + filePath.pf_data_path
+                    + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\'"
+                    + "-a duration:86400")
+    os.system("sudo tshark -r "
+                    + filePath.pf_data_path
+                    + " -Y \"wlan.fc.type_subtype==0x0004\""
+                    + "-T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
+                    + filePath.csv_probe_path)
+    os.system("sudo tshark -r "
+                    + filePath.pf_data_path
+                    + " -Y \"wlan.fc.type_subtype==0x0008\" -T fields -e wlan.sa -e wlan.ssid -e wlan.fixed.timestamp -e frame.time_relative -e wlan.ds.current_channel -e wlan_radio.signal_dbm -e wlan_radio.duration -E separator=, -E quote=n -E header=y > "
+                    + filePath.csv_beacon_path)
 
 def proReq_process():
-    mac_list = []         #추출된 맥 리스트
-    mac_pkt_dc = {}       #맥어드레스 딕셔너리, key:mac address value: 해당 맥 패킷데이터 리스트
-    mac_csv_dc = {}       #mac별 csv파일 리스트
-    csv_fm_list = []      #mac별 featuremodel 파일 리스트
-    feat_x_train = []     #random forest feature x_train list
-    feat_y_train = []     #random forest feature y_train list
+    mac_list = []           # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
+    mac_pkt_dc = {}     # key:wlan.sa, value: probe-request(list)
+    mac_csv_dc = {}     # key:wlan.sa, value: csv file names(list)
+    csv_fm_list = []      # feature model file names for each wlan.sa(mac address)
+    feat_x_train = []    # random forest model x_train
+    feat_y_train = []    # random forest model y_train
+   
+    prePro.preReq_Prepro()  # preprocessor wlan.seq(sequence number)
 
-   #시퀀스번호 및 길이 전처리
-    prePro.preReq_Prepro()
+    mac_list = prePro.extract_macAddress(filePath.csv_probe_path)   # extract wlan.sa(mac address)
 
-    #맥 어드레스 추출
-    mac_list = prePro.extract_macAddress(filePath.csv_probe_path)
+    file.make_Directory(filePath.probe_path)    # make the probe Directory
     
-    #probe 폴더 생성
-    file.make_Directory(filePath.probe_path)
-
-    #mac별 폴더 생성
-    file.make_macDirectory(filePath.probe_path,mac_list)
+    file.make_macDirectory(filePath.probe_path,mac_list) # make each wlan.sa Directory
     
-    #mac별 csv 파일이름 리스트 생성
-    mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10)
+    mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10) # make csv file names list for each the wlan.sa
 
-    #맥별 패킷 데이터 추출
-    mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list)
+    mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
 
-    #시간별 csv파일에 패킷데이터 저장
-    file.save_csvFile(filePath.probe_path,mac_pkt_dc,10)
+    file.save_csvFile(filePath.probe_path,mac_pkt_dc,10) # save the probe-request data to the csv file for each the time
 
-    #mac별 Feature 추출 모델 파일 생성
+    # make feature csv file for each the wlan.sa
     for mac_name in mac_list:
         file.make_csvFeature(filePath.probe_path,mac_name,"seq")
 
-    #디바이스별 Feature 추출 모델 데이터 작성 및 mac별 featuremodel file 리스트 반환받음
-    csv_fm_list = file.init_seq_FeatureFile(mac_csv_dc)
+    csv_fm_list = file.init_seq_FeatureFile(mac_csv_dc) #a dd the feature data
 
-    #probe request 훈련 데이터 저장
-    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list)
+    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # return the training data about the probe-request
 
-    machine_learn.random_forest_model(feat_x_train,feat_y_train)
+    machine_learn.random_forest_model(feat_x_train,feat_y_train) # make Device identify model
 
-def beacon_process():
-    bc_mac_list = []
-    bc_mac_pkt_dc = {}
-    bc_mac_csv_dc = {}
-    bc_csv_fm_list = [] #becone frame feature csv file names
-
-    #beacon 폴더 생성
-    file.make_Directory(filePath.beacon_path)
-
-    #beacon.csv의 mac 리스트 생성
-    bc_mac_list = prePro.extract_macAddress(filePath.csv_beacon_path)
     
-    #mac별  폴더 생성
-    file.make_macDirectory(filePath.beacon_path,bc_mac_list)
+def beacon_process():
+    bc_mac_list = []        # becon-frame wlan.sa list
+    bc_mac_pkt_dc = {}  # key: wlan.sa , value: becon-frame(2-D list)
+    bc_mac_csv_dc = {}  # key: wlan.sa, value: csv file names(list)
+    bc_csv_fm_list = []   # becon-frame feature csv file names(list)
 
-    #mac별 시간으로 구분한 csv파일 생성
+    file.make_Directory(filePath.beacon_path) #make the becon Directory
+
+    bc_mac_list = prePro.extract_macAddress(filePath.csv_beacon_path) # extract wlan.sa(mac address)
+    
+    file.make_macDirectory(filePath.beacon_path,bc_mac_list) # make Directory for each the wlan.sa
+
+    """make csv file
+    make becon-frame csv file
+    return the csv file names list for each the wlan.sa
+    """
     bc_mac_csv_dc = file.make_macCsvFile(filePath.beacon_path,bc_mac_list,3)
 
-    #맥별 패킷 데이터 추출
+    """extract the becon-frame
+    extract becon-frame for each the wlan.sa
+    return the becon-frame dictionary for each wlan.sa
+    """
     bc_mac_pkt_dc = prePro.extract_packetLine(filePath.csv_beacon_path,bc_mac_list)
 
-    #비콘 time stampe 수신 데이터 전처리
-    bc_mac_pkt_dc =  prePro.beacon_prepro(bc_mac_pkt_dc)
-        
-    #맥별 패킷 데이터 csv에 저장
-    file.save_csvFile(filePath.beacon_path,bc_mac_pkt_dc,3)
+    file.save_csvFile(filePath.beacon_path,bc_mac_pkt_dc,3) # save the becon-frame to csv file
 
-    #mac별 Feature 추출 모델 파일 생성
+    prePro.beacon_prepro(bc_mac_csv_dc) # preprocessor wlan.fixed.timestamp
+
+    #make becon-frame feature csv file for each wlan.sa
     for mac_name in bc_mac_list:
         file.make_csvFeature(filePath.beacon_path,mac_name,frame="beacon")
 
+    """save the feature data
+    save the feature data for each the wlan.sa
+    return the feature file csv names list
+    """
     bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc)
 
-    feat_x_train, feat_y_train = machine_learn.get_becon_train_data(bc_csv_fm_list)
+    x_train, y_train = machine_learn.get_becon_train_data(bc_csv_fm_list) #get training data
 
-    machine_learn.random_forest_model(feat_x_train,feat_y_train)
-    
+    machine_learn.random_forest_model(x_train,y_train) # make AP identify model
 
-#main
 def main():
-    
-    #패킷 수집
-    packet_collect()
+    #packet_collect() # collect the data
 
-    #probe-request data 가공
-    proReq_process()
+    proReq_process() # preprocess the probe-request 
  
-    #beacon frame 가공
-    beacon_process()
+    beacon_process() #preprocess the becon frame
 
- 
 if __name__=="__main__":
     main()
 

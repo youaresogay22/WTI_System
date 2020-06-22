@@ -1,21 +1,33 @@
+"""
+title : function about the file module
+author : YONG HWAN KIM (yh.kim951107@gmail.com)
+date : 2020-06-22
+detail : 
+todo :
+"""
+
 import os
 import csv
 import machine_learn
 import filePath
 import prePro
 
-#probe 폴더 생성
+"""make the Directory
+remove the directory of path and
+create the directory to path(Arg)
+"""
 def make_Directory(path):
     os.system("sudo rm -r "+path)
 
-    #맥 어드레스 별로 디렉토리 생성
     if not os.path.exists(path):
         os.mkdir(path)
         print("Directory ",path," created")
     else:
         print("Directory ",path," already exist")
 
-#mac 폴더 생성
+"""make the Directory
+create the directory for each the wlan.sa to the path(Arg)
+"""
 def make_macDirectory(path,mac_list):
     for mac_name in mac_list:
         if not os.path.exists(path+mac_name):
@@ -24,7 +36,9 @@ def make_macDirectory(path,mac_list):
         else:
             print("Directory ",path,mac_name, " already exist")
 
-#mac별 시퀀스넘버증가량,길이(length),레이블 Feature 모델 csv파일 생성
+"""make feature csv file
+make feature csv file about probe-request or becon-frame
+"""
 def make_csvFeature(path,mac,frame="seq"):
     csvFeatureFileName = path+mac+"/"+mac+"_"+"FeatureModle.csv"
     with open(csvFeatureFileName,"w") as f:
@@ -34,65 +48,62 @@ def make_csvFeature(path,mac,frame="seq"):
         elif frame=="beacon":
             writer.writerow(["Clock skew","RSS","ch1","ch2","ch3","ch4","ch5","ch6","ch7","ch8","ch9","duration","SSID","MAC Address"])
 
-#시간별로 csv파일에 저장
+"""add frame data
+add frame data about probe-request or becon-frame to csv file
+"""
 def save_csvFile(path,mac_dc,interval):
     col = 1
-    if interval==10:
+    if interval==10:    #probe-request
         col = 1
-    elif interval==3:
+    elif interval==3:   #becon-frame
         col = 3
 
-    #딕셔너리 k값 순회
     for k in mac_dc.keys():
-        value = mac_dc[k]   #딕셔너리 키값에 대한 값(2차원 리스트) 저장
+        value = mac_dc[k]
 
-        #리스트들 순회
-        for i in range(len(value)):
-            second = int(float(value[i][col]))
-            h, m = prePro.trans_time(second,interval) # 패킷 데이터의 경과된 시, 분 변환
+        for i in range(len(value)): #transfer received time from time to hour, minute, second
+            sec = int(float(value[i][col]))
+            h, m = prePro.trans_time(sec,interval)
+            csv_filename = path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv"
             
-            csv_filename = path + k + "/" + k + "_" + str(h) + "_" + str(m) +".csv" #csv 파일 이름 생성
-            
-            
-            #csv 파일 내용 작성
-            with open(csv_filename,"a") as f:
+            with open(csv_filename,"a") as f: # update the csv file
                 writer = csv.writer(f)
                 writer.writerow(value[i])
 
-#Feature 추출 모델에 데이터 입력
+"""write the probe-request's feature data
+write the sequnce number delta, length, label.
+sequence number delta is saved to using linear_regression.
+"""
 def init_seq_FeatureFile(mac_csv_dc):
-    time_list = []          #수신시간 리스트
-    seqNum_list = []    #시퀀스넘버 리스트
-    csv_fm_list = []
-    W = 0                     #기울기
-    label = 0                 #무선단말 레이블
+    time_list = []          #frame.time_relative
+    seqNum_list = []    #sequence number delta
+    csv_fm_list = []      #feature csv file names
+    W = 0                     #delta
+    label = 0                 #label
 
     for key,value in mac_csv_dc.items():
-
-        #시간별 csv파일을 참조하여 시퀀스 넘버 증가량, 길이, label 설정
+    
         for idx in range(len(value)):
             csvFile = value[idx]           
-            time_list = machine_learn.make_timeRelative_list(csvFile)
-            seqNum_list = machine_learn.make_seqNumberList(csvFile)
+            time_list = machine_learn.make_timeRelative_list(csvFile)       #x_train, extract the frame.time_relative
+            seqNum_list = machine_learn.make_seqNumberList(csvFile)   #y_train, extract the wlan.seq
             
             if not time_list or not seqNum_list:
                 continue
             else:
-                #시퀀스 넘버 기울기를 구하는 머신러닝 생성
-                W = float(machine_learn.linear_regreesion(time_list,seqNum_list))
+                W = float(machine_learn.linear_regreesion(time_list,seqNum_list)) #get seqeuce number delta
             
-            #Feature 추출 모델 이름 생성
-            csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv"
-            #save the featuremodel.csv name
-            if csv_fm not in csv_fm_list:
+            csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
+
+            if csv_fm not in csv_fm_list: #save the featuremodel.csv name
                 csv_fm_list.append(csv_fm)
 
-            #길이 저장
-            with open(csvFile,"r") as f:
+            
+            with open(csvFile,"r") as f:    #save the length
                 rdr = csv.reader(f)
                 length = rdr.__next__()[4]
             
-            with open(csv_fm,"a") as f:
+            with open(csv_fm,"a") as f: #write the probe-request features
                 feature_lline = [W,length,label]
                 writer = csv.writer(f)
                 writer.writerow(feature_lline)
@@ -101,8 +112,16 @@ def init_seq_FeatureFile(mac_csv_dc):
     return csv_fm_list
 
 #beacon frame value 초기화
+"""write the becon-frame feature
+
+param
+bc_mac_csv_dc  : key:wlan.sa, value: csv file name list
+
+return
+csv_fm_list : feature csv file name list
+"""
 def init_beacon_FeatureFile(bc_mac_csv_dc):
-    csv_fm_list = []    #csv featuremodel names
+    csv_fm_list = []    #csv feature csv file names
     bc_list = []
     x_train = []
     y_train = []
@@ -113,52 +132,47 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
     duration = 0
     ssid = ""
     mac_addr = ""
+
     for key, value in bc_mac_csv_dc.items():
         for idx in range(len(value)):
                 csvFile = value[idx]
-                
-                #csv파일에 있는 패킷 데이터 라인 리스트에 복사
-                with open(csvFile,"r") as f:
+
+                with open(csvFile,"r") as f: #copy the becon-frame to the bc_list
                     rdr = csv.reader(f)
                     for line in rdr:
                         bc_list.append(line)
                 
-                #리스트가 비었으면 continue
                 if not bc_list:
                     continue
-                else:
-                    
+                else:    
                     for idx in range(len(bc_list)):
-                        x_train.append([float(bc_list[idx][2])])
-                        y_train.append([(float(bc_list[idx][3])-float(bc_list[0][3]))-float(bc_list[idx][2])])
-                        rss_list.append(int(bc_list[idx][5]))
+                        x_train.append([float(bc_list[idx][2])]) # i th wlan.fixed.timestamp
+                        y_train.append([(float(bc_list[idx][3])  # (i th frame.time_relative - 0th frame.time_relative) - i th wlan.fixed.timestamp
+                                                -float(bc_list[0][3]))
+                                                -float(bc_list[idx][2])])
+                        rss_list.append(int(bc_list[idx][5]))       # wlan_radio.signal_dbm
+
                 if x_train and y_train:
-                    #clock sycle
-                    W = float(machine_learn.linear_regreesion(x_train,y_train))
                     
-                    #RSS
-                    rss_value = Counter(rss_list)
+                    W = float(machine_learn.linear_regreesion(x_train,y_train)) # clock skew
                     
-                    #채널
-                    ch_val = int(bc_list[0][4])
+                    rss_value = Counter(rss_list) # RSS
+
+                    ch_val = int(bc_list[0][4]) # wlands.current_channel
                     ch_list[ch_val-1] = 1
 
-                    #duration
-                    duration = int(bc_list[0][6])
+                    duration = int(bc_list[0][6]) # wlan_radio.duration
 
-                    #ssid
-                    ssid = bc_list[0][1]
+                    ssid = bc_list[0][1] # wlan.ssid
 
-                    #mac addr
-                    mac_addr = bc_list[0][0]
+                    mac_addr = bc_list[0][0] # wlan.sa
                     
-                    #Feature 추출 모델 이름 생성
                     csv_fm = filePath.beacon_path + key + "/" + key + "_FeatureModle.csv"
                     
                     if csv_fm not in csv_fm_list:
                         csv_fm_list.append(csv_fm)
 
-                    with open(csv_fm,"a") as f:
+                    with open(csv_fm,"a") as f: #write the becon-frame feature
                         feature_lline = [W,rss_value,ch_list[0],ch_list[1],ch_list[2],ch_list[3],ch_list[4],ch_list[5],ch_list[6],ch_list[7],ch_list[8],duration,ssid,mac_addr]
                         writer = csv.writer(f)
                         writer.writerow(feature_lline)
@@ -170,7 +184,10 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                 ch_list= [0 for _ in range(1,10)]
 
     return csv_fm_list
-#최빈값 탐색
+
+"""find the mode
+count the number in  becon-frame linst
+"""
 def Counter(x):
     dictionary = {}
     result = 0
@@ -179,37 +196,41 @@ def Counter(x):
             dictionary[i] = 1
         else:
             dictionary[i] +=1
+
     most = max(dictionary.values())
     for key, value in dictionary.items():
-        if value == most:
+        if value == most: #find the key for return the rss value
                 result = key
     return result
 
-#mac 별 csv 파일 생성
+
+"""make csv file for each the wlan.sa
+
+params
+path : save path
+mac_list : wlan.sa list
+m_interval : minute interval
+
+return
+mac_csv_dc : key:wlan.sa, value : csv file name list
+"""
 def make_macCsvFile(path,mac_list,m_interval):
     mac_csv_dc = {}
     csv_nameList = []
 
-    #mac맥 csv파일리스트 맵의 키 설정
-    for mac_name in mac_list:
+    for mac_name in mac_list: #Set key: wlan.sa, value : empty list
         mac_csv_dc.update({mac_name:[]})
-
-    #시간별 csv 파일 생성
-    for mac_name in mac_list:
-        #시, 분 별 csv 파일 이름 생성
+    
+    for mac_name in mac_list:   #make csv file names
         for hour in range(0,24,1):
             for minute in range(0,60,m_interval):
                 csv_filename = path+mac_name+"/" + mac_name + "_" + str(hour) + "_" + str(minute) + ".csv"
                 csv_nameList.append(csv_filename)
 
-                #mac키에 csv파일 이름 추가
-                mac_csv_dc[mac_name].append(csv_filename)
-        
-        
-    #시간별 csv 파일 생성
-    for csvName in csv_nameList:
+                mac_csv_dc[mac_name].append(csv_filename)   #return data
+
+    for csvName in csv_nameList:    # create csv file
         with open(csvName,"w") as f:
             csv.writer(f)
-        
-
+    
     return mac_csv_dc
