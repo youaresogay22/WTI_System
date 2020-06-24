@@ -46,7 +46,7 @@ def make_csvFeature(path,mac,frame="seq"):
         if frame=="seq":
             writer.writerow(["delta seq no","length","label"])
         elif frame=="beacon":
-            writer.writerow(["Clock skew","RSS","ch1","ch2","ch3","ch4","ch5","ch6","ch7","ch8","ch9","duration","SSID","MAC Address"])
+            writer.writerow(["Clock skew","RSS","Channel","duration","SSID","MAC Address"])
 
 """add frame data
 add frame data about probe-request or becon-frame to csv file
@@ -88,6 +88,9 @@ def init_seq_FeatureFile(mac_csv_dc):
             time_list = machine_learn.make_timeRelative_list(csvFile)       #x_train, extract the frame.time_relative
             seqNum_list = machine_learn.make_seqNumberList(csvFile)   #y_train, extract the wlan.seq
             
+            if len(time_list)<15: #when probe-request is too smaller, we not write feature the probe-request
+                continue
+
             if not time_list or not seqNum_list:
                 continue
             else:
@@ -127,8 +130,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
     y_train = []
     rss_list = []
     rss_value=0
-    ch_list = [0 for _ in range(1,10)]
-    ch_val = 0
+    channel = 0
     duration = 0
     ssid = ""
     mac_addr = ""
@@ -158,8 +160,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                     
                     rss_value = Counter(rss_list) # RSS
 
-                    ch_val = int(bc_list[0][4]) # wlands.current_channel
-                    ch_list[ch_val-1] = 1
+                    channel = int(bc_list[0][4]) # wlands.current_channel
 
                     duration = int(bc_list[0][6]) # wlan_radio.duration
 
@@ -173,7 +174,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                         csv_fm_list.append(csv_fm)
 
                     with open(csv_fm,"a") as f: #write the becon-frame feature
-                        feature_lline = [W,rss_value,ch_list[0],ch_list[1],ch_list[2],ch_list[3],ch_list[4],ch_list[5],ch_list[6],ch_list[7],ch_list[8],duration,ssid,mac_addr]
+                        feature_lline = [W,rss_value,channel,duration,ssid,mac_addr]
                         writer = csv.writer(f)
                         writer.writerow(feature_lline)
                     
@@ -181,7 +182,6 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
                 y_train = []
                 bc_list = []
                 rss_list = []
-                ch_list= [0 for _ in range(1,10)]
 
     return csv_fm_list
 

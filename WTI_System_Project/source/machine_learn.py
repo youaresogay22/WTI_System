@@ -54,7 +54,8 @@ def make_seqNumberList(csvFile):
             seqNum_0 = float(temp_seqNum_list[0])
             for idx in range(len(temp_seqNum_list)):
                     seqNum_list.append((float(temp_seqNum_list[idx]) - seqNum_0))
-    
+    if seqNum_list:
+        print(seqNum_list)
     return seqNum_list
 
 #선형 모델 기울기 반환
@@ -91,7 +92,7 @@ def get_proReq_FeatureModel(name):
     with open(name,"r") as f:
         rdr = csv.reader(f)
         next(rdr,None) #header skip
-
+        
         for row in rdr:
             x_train.append(list(map(float,row[:2])))  # convert all str list to integer list
             y_train.append(list(map(int,row[-1])))  # conver all str list to integer list
@@ -125,30 +126,32 @@ def get_proReq_train_data(csv_fm_list):
 
 """get feature data
 get x_train, y_train data to use the random forest model
+x_train : ClockSkew, RSS, channel, duration
+y_train : label
 
 params
 name : feature csv file name
-label : AP label
+
 
 todo : 비콘 프레임 y_train으로 ssid와 mac주소 매핑이 필요
+
+key : (ssid,mac address) value : label
+
 """
 def get_becon_FeatureModel(name,label):
     x_train = []
     y_train = []
-    
+    target = ()
     with open(name,"r") as f:
         rdr = csv.reader(f)
         next(rdr,None) #header skip
 
         for row in rdr: #extract and process the x_train
-            data = row[0:2]
-            channel = [str(row[2:11].index("1") + 1)] #find the channel
-            duration = [row[11]]
-            total_list = data + channel + duration
-            x_train.append(total_list)
-            y_train.append(label)
+            x_train.append(row[0:4]) #ClockSkew, RSS, channel, duration
+            y_train.append(label) #SSID, MAC Address
+            target = tuple(row[4:6])
     
-    return x_train ,y_train
+    return x_train ,y_train, target
 
 """get becon-frame training data
 
@@ -158,22 +161,25 @@ csv_fm_list : feature csv file names
 return
 feat_x_train : clock skew, RSS, channel, duration,
 feat_y_train : ssid,mac address
+ap_dic : key:(SSID,MAC Address), value:label
 """
 def get_becon_train_data(csv_fm_list):
     feat_x_train = []
     feat_y_train = []
-#    feat_y_train = {}
+    ap_dic = {}
     label = 0
+    
     for name in csv_fm_list:
-        x_train, y_train = get_becon_FeatureModel(name,label)
+        x_train, y_train, target = get_becon_FeatureModel(name,label)
+        ap_dic.update({target : label})
         label += 1
-
         for data in x_train:
             feat_x_train.append(data)
         for data in y_train:
             feat_y_train.append(data)
     
-    return feat_x_train, feat_y_train
+    
+    return feat_x_train, feat_y_train, ap_dic
 
 """create device identify model
 model type is random forest model
@@ -193,5 +199,5 @@ def random_forest_model(data, target):
     rf.fit(x_train,y_train)
 
     #accuracy_score test
-    #y_pred = rf.predict(x_test)
-    #print("accuracy score :", metrics.accuracy_score(y_test,y_pred))
+    y_pred = rf.predict(x_test)
+    print("accuracy score :", metrics.accuracy_score(y_test,y_pred))

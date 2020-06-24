@@ -41,11 +41,11 @@ def packet_collect():
     os.system("sudo tshark -i wlan1 -w "
                     + filePath.pf_data_path
                     + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\'"
-                    + "-a duration:86400")
+                    + " -a duration:3600")
     os.system("sudo tshark -r "
                     + filePath.pf_data_path
                     + " -Y \"wlan.fc.type_subtype==0x0004\""
-                    + "-T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
+                    + " -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
                     + filePath.csv_probe_path)
     os.system("sudo tshark -r "
                     + filePath.pf_data_path
@@ -90,7 +90,8 @@ def beacon_process():
     bc_mac_pkt_dc = {}  # key: wlan.sa , value: becon-frame(2-D list)
     bc_mac_csv_dc = {}  # key: wlan.sa, value: csv file names(list)
     bc_csv_fm_list = []   # becon-frame feature csv file names(list)
-
+    ap_dic = {} # key : (ssid,MAC Address), value: label
+    
     file.make_Directory(filePath.beacon_path) #make the becon Directory
 
     bc_mac_list = prePro.extract_macAddress(filePath.csv_beacon_path) # extract wlan.sa(mac address)
@@ -123,7 +124,7 @@ def beacon_process():
     """
     bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc)
 
-    x_train, y_train = machine_learn.get_becon_train_data(bc_csv_fm_list) #get training data
+    x_train, y_train, ap_dic = machine_learn.get_becon_train_data(bc_csv_fm_list) #get training data
 
     machine_learn.random_forest_model(x_train,y_train) # make AP identify model
 
