@@ -90,11 +90,11 @@ def init_seq_FeatureFile(mac_csv_dc):
             
             if len(time_list)<15: #when probe-request is too smaller, we not write feature the probe-request
                 continue
-
+            
             if not time_list or not seqNum_list:
                 continue
             else:
-                W = float(machine_learn.linear_regreesion(time_list,seqNum_list)) #get seqeuce number delta
+                W = float(machine_learn.tensor_linear_regression(time_list,seqNum_list)) #get seqeuce number delta
             
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
 
@@ -156,7 +156,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
 
                 if x_train and y_train:
                     
-                    W = float(machine_learn.linear_regreesion(x_train,y_train)) # clock skew
+                    W = float(machine_learn.tensor_linear_regression(x_train,y_train)) # clock skew
                     
                     rss_value = Counter(rss_list) # RSS
 

@@ -10,11 +10,13 @@ import csv
 import numpy as np
 import prePro
 import pandas as pd
+import tensorflow.compat.v1 as tf
 
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
+
 
 """make training data
 make the time data list for the sequence number delta
@@ -28,8 +30,8 @@ time_list : frame.time_relative data list in csvFile
 def make_timeRelative_list(csvFile):    
     with open(csvFile,"r") as f:
         rdr = csv.reader(f)
-        time_list = prePro.extract_data_index(rdr,1) #extract frame.time_relative list
-
+        #time_list = prePro.extract_data_index(rdr,1) #extract frame.time_relative list
+        time_list = list(map(float,prePro.extract_data_index(rdr,1)))
     return time_list
 
 
@@ -54,8 +56,7 @@ def make_seqNumberList(csvFile):
             seqNum_0 = float(temp_seqNum_list[0])
             for idx in range(len(temp_seqNum_list)):
                     seqNum_list.append((float(temp_seqNum_list[idx]) - seqNum_0))
-    if seqNum_list:
-        print(seqNum_list)
+
     return seqNum_list
 
 #선형 모델 기울기 반환
@@ -73,15 +74,47 @@ return
 probe-request : sequence number delta
 becon-frame : clock skew
 """
-def linear_regreesion(x_train,y_train):
+def linear_regression(x_train,y_train):
+    
     X = np.array(x_train).astype(np.float64).reshape(-1,1)
     y = np.array(y_train).astype(np.float64)
-
+    
     line_fitter = LinearRegression()
     line_fitter.fit(X,y)
     
     return line_fitter.coef_
 
+def tensor_linear_regression(x_train,y_train):
+    tf.disable_v2_behavior()
+    tf.set_random_seed(777)  # for reproducibility
+
+    # Try to find values for W and b to compute y_data = x_data * W + b
+    # We know that W should be 1 and b should be 0
+    # But let TensorFlow figure it out
+    W = tf.Variable(tf.random_normal([1]), name="weight")
+    b = tf.Variable(tf.random_normal([1]), name="bias")
+
+    # Our hypothesis XW+b
+    hypothesis = x_train * W + b
+
+    # cost/loss function
+    cost = tf.reduce_mean(tf.square(hypothesis - y_train))
+
+    # optimizer
+    train = tf.train.GradientDescentOptimizer(learning_rate=0.00000001).minimize(cost)
+
+    # Launch the graph in a session.
+    with tf.Session() as sess:
+        # Initializes global variables in the graph.
+        sess.run(tf.global_variables_initializer())
+
+        # Fit the line
+        for step in range(501):
+            _, cost_val, W_val, b_val = sess.run([train, cost, W, b])
+
+            if step % 20 == 0:
+                print(step, cost_val, W_val, b_val)
+    return W_val[0]
 ##############################################################################
 """get feature data
 open the feature file and then input to x_train, y_train

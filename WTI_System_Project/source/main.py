@@ -129,7 +129,7 @@ def beacon_process():
     machine_learn.random_forest_model(x_train,y_train) # make AP identify model
 
 def main():
-    #packet_collect() # collect the data
+    packet_collect() # collect the data
 
     proReq_process() # preprocess the probe-request 
  
