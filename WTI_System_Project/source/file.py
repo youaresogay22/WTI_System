@@ -156,7 +156,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
 
                 if x_train and y_train:
                     
-                    W = float(machine_learn.tensor_linear_regression(x_train,y_train)) # clock skew
+                    W = float(machine_learn.linear_regression(x_train,y_train)) # clock skew
                     
                     rss_value = Counter(rss_list) # RSS
 
@@ -224,7 +224,13 @@ def make_macCsvFile(path,mac_list,m_interval):
     for mac_name in mac_list:   #make csv file names
         for hour in range(0,24,1):
             for minute in range(0,60,m_interval):
-                csv_filename = path+mac_name+"/" + mac_name + "_" + str(hour) + "_" + str(minute) + ".csv"
+                str_hour = str(hour)
+                str_minute = str(minute)
+                if hour < 10:
+                    str_hour = "0"+str(hour)
+                if minute < 10:
+                    str_minute = "0"+str(minute)
+                csv_filename = path+mac_name+"/" + mac_name + "_" + str_hour + "_" + str_minute + ".csv"
                 csv_nameList.append(csv_filename)
 
                 mac_csv_dc[mac_name].append(csv_filename)   #return data

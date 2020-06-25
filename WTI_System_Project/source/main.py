@@ -19,10 +19,11 @@ def packet_collect():
     """Set the NIC monitor mode
     Set the NIC(Network Interface Card) from managed mode to monitor mode
     """
+    
     os.system("sudo ifconfig wlan1 down")
     os.system("sudo iwconfig wlan1 mode monitor")
     os.system("sudo ifconfig wlan1 up")
-
+    
     """Make the Directory
     Make the pcapng_folder, csv Directory 
     """
@@ -32,16 +33,18 @@ def packet_collect():
                     +filePath.csv_path)
     os.system("sudo chmod 777 "
                     +filePath.csv_path)
-
+    
     """Capture the packet
     step1 Scan the becon frame or probe-request
     step2 select the frame field
     step3 save the becon frame and probe-request
     """
+    
     os.system("sudo tshark -i wlan1 -w "
                     + filePath.pf_data_path
                     + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\'"
                     + " -a duration:3600")
+    
     os.system("sudo tshark -r "
                     + filePath.pf_data_path
                     + " -Y \"wlan.fc.type_subtype==0x0004\""
@@ -129,7 +132,7 @@ def beacon_process():
     machine_learn.random_forest_model(x_train,y_train) # make AP identify model
 
 def main():
-    packet_collect() # collect the data
+    #packet_collect() # collect the data
 
     proReq_process() # preprocess the probe-request 
  

@@ -104,6 +104,11 @@ def trans_time(sec,interval):
     m = int(s//60)
     m = (m//interval)*interval
     
+    if h<10:
+        h = "0"+str(h)
+    if m<10:
+        m = "0"+str(m)
+
     return str(h), str(m)
 
 """extract wlan.sa
