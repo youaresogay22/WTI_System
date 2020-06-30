@@ -11,7 +11,7 @@ import csv
 import machine_learn
 import filePath
 import prePro
-
+import pandas
 """make the Directory
 remove the directory of path and
 create the directory to path(Arg)
@@ -70,6 +70,21 @@ def save_csvFile(path,mac_dc,interval):
                 writer = csv.writer(f)
                 writer.writerow(value[i])
 
+def read_csv(csvfile):
+    x_train = []
+    y_train = []
+
+    colnames = ['sa','time_relative','seq','ssid','len']
+    data = pandas.read_csv(csvfile,names=colnames)
+    time=data.time_relative.tolist()
+    seq=data.seq.tolist()
+    
+    for a in time:
+        x_train.append(a)
+    for b in seq:
+        y_train.append(b)
+    return x_train, y_train
+
 """write the probe-request's feature data
 write the sequnce number delta, length, label.
 sequence number delta is saved to using linear_regression.
@@ -85,16 +100,15 @@ def init_seq_FeatureFile(mac_csv_dc):
     
         for idx in range(len(value)):
             csvFile = value[idx]           
-            time_list = machine_learn.make_timeRelative_list(csvFile)       #x_train, extract the frame.time_relative
-            seqNum_list = machine_learn.make_seqNumberList(csvFile)   #y_train, extract the wlan.seq
+            x_train, y_train = read_csv(csvFile)
             
-            if len(time_list)<15: #when probe-request is too smaller, we not write feature the probe-request
+            if len(x_train)<15:
                 continue
-            
-            if not time_list or not seqNum_list:
+
+            if not x_train or not y_train:
                 continue
             else:
-                W = float(machine_learn.tensor_linear_regression(time_list,seqNum_list)) #get seqeuce number delta
+                W = float(machine_learn.linear_regression2(x_train,y_train)) #get seqeuce number delta
             
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
 

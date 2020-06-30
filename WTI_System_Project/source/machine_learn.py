@@ -16,7 +16,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-
+from sklearn.preprocessing import MinMaxScaler
 
 """make training data
 make the time data list for the sequence number delta
@@ -84,37 +84,42 @@ def linear_regression(x_train,y_train):
     
     return line_fitter.coef_
 
-def tensor_linear_regression(x_train,y_train):
+def linear_regression2(x_train,y_train):
     tf.disable_v2_behavior()
-    tf.set_random_seed(777)  # for reproducibility
+    tf.set_random_seed(777)
+    
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_train = x_train.reshape(-1, 1)
+    y_train = y_train.reshape(-1, 1)
 
-    # Try to find values for W and b to compute y_data = x_data * W + b
-    # We know that W should be 1 and b should be 0
-    # But let TensorFlow figure it out
-    W = tf.Variable(tf.random_normal([1]), name="weight")
-    b = tf.Variable(tf.random_normal([1]), name="bias")
+    x_scaler = MinMaxScaler()
+    y_scaler = MinMaxScaler()
+    x_train = x_scaler.fit_transform(x_train)
 
-    # Our hypothesis XW+b
-    hypothesis = x_train * W + b
+    #������ ������ �°� ����ȭ�� ����
+    y_train = x_scaler.transform(y_train)
 
-    # cost/loss function
-    cost = tf.reduce_mean(tf.square(hypothesis - y_train))
+    W=tf.Variable(tf.random_normal([1]), name="weight")
+    b=tf.Variable(tf.random_normal([1]), name="bias")
 
-    # optimizer
-    train = tf.train.GradientDescentOptimizer(learning_rate=0.00000001).minimize(cost)
+    hypothesis = x_train*W+b
+    cost = tf.reduce_mean(tf.square(hypothesis-y_train))
 
-    # Launch the graph in a session.
-    with tf.Session() as sess:
-        # Initializes global variables in the graph.
-        sess.run(tf.global_variables_initializer())
+    #optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=0.0001,momentum=0.9)
+    train = optimizer.minimize(cost)
 
-        # Fit the line
-        for step in range(501):
-            _, cost_val, W_val, b_val = sess.run([train, cost, W, b])
-
-            if step % 20 == 0:
-                print(step, cost_val, W_val, b_val)
-    return W_val[0]
+    sess=tf.Session()
+    sess.run(tf.global_variables_initializer())
+    
+    for step in range(50001):
+        #_, cost_val, W_val, b_val = sess.run(train)
+        sess.run(train)
+        if step%100 == 0:
+            print(step,sess.run(cost), sess.run(W), x_scaler.inverse_transform(sess.run(b).reshape(-1,1)))
+    
+    return sess.run(W)
 ##############################################################################
 """get feature data
 open the feature file and then input to x_train, y_train

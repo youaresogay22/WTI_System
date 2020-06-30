@@ -136,7 +136,7 @@ def main():
 
     proReq_process() # preprocess the probe-request 
  
-    beacon_process() #preprocess the becon frame
+    #beacon_process() #preprocess the becon frame
 
 if __name__=="__main__":
     main()
