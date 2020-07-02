@@ -100,7 +100,9 @@ def init_seq_FeatureFile(mac_csv_dc):
     
         for idx in range(len(value)):
             csvFile = value[idx]           
-            x_train, y_train = read_csv(csvFile)
+            #x_train, y_train = read_csv(csvFile)
+            x_train = machine_learn.make_timeRelative_list(csvFile)
+            y_train = machine_learn.make_seqNumberList(csvFile)
             
             if len(x_train)<15:
                 continue
@@ -108,7 +110,7 @@ def init_seq_FeatureFile(mac_csv_dc):
             if not x_train or not y_train:
                 continue
             else:
-                W = float(machine_learn.linear_regression2(x_train,y_train)) #get seqeuce number delta
+                W = float(machine_learn.tensor_linear_regression(x_train,y_train)) #get seqeuce number delta
             
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
 
@@ -170,7 +172,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
 
                 if x_train and y_train:
                     
-                    W = float(machine_learn.linear_regression(x_train,y_train)) # clock skew
+                    W = float(machine_learn.sklearn_linear_regression(x_train,y_train)) # clock skew
                     
                     rss_value = Counter(rss_list) # RSS
 

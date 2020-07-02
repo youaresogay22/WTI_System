@@ -60,21 +60,16 @@ def make_seqNumberList(csvFile):
     return seqNum_list
 
 #선형 모델 기울기 반환
-"""get delta
-params
-probe-request
-x_train : frame.time_relative
-y_train : wlan.seq
+"""get click skew
 
 becon-frame
 x_train : wlan.fixed.timestamp list
 y_train : i th frame.time_relative - 0th frame.time_relative) - i th wlan.fixed.timestamp, data list
 
 return
-probe-request : sequence number delta
 becon-frame : clock skew
 """
-def linear_regression(x_train,y_train):
+def sklearn_linear_regression(x_train,y_train):
     
     X = np.array(x_train).astype(np.float64).reshape(-1,1)
     y = np.array(y_train).astype(np.float64)
@@ -84,7 +79,16 @@ def linear_regression(x_train,y_train):
     
     return line_fitter.coef_
 
-def linear_regression2(x_train,y_train):
+"""get sequence number delta
+params
+probe-request
+x_train : frame.time_relative
+y_train : wlan.seq
+
+return
+probe-request : sequence number delta
+"""
+def tensor_linear_regression(x_train,y_train):
     tf.disable_v2_behavior()
     tf.set_random_seed(777)
     
@@ -97,7 +101,6 @@ def linear_regression2(x_train,y_train):
     y_scaler = MinMaxScaler()
     x_train = x_scaler.fit_transform(x_train)
 
-    #������ ������ �°� ����ȭ�� ����
     y_train = x_scaler.transform(y_train)
 
     W=tf.Variable(tf.random_normal([1]), name="weight")
@@ -120,6 +123,7 @@ def linear_regression2(x_train,y_train):
             print(step,sess.run(cost), sess.run(W), x_scaler.inverse_transform(sess.run(b).reshape(-1,1)))
     
     return sess.run(W)
+
 ##############################################################################
 """get feature data
 open the feature file and then input to x_train, y_train
@@ -170,11 +174,7 @@ y_train : label
 params
 name : feature csv file name
 
-
-todo : 비콘 프레임 y_train으로 ssid와 mac주소 매핑이 필요
-
 key : (ssid,mac address) value : label
-
 """
 def get_becon_FeatureModel(name,label):
     x_train = []
@@ -209,7 +209,7 @@ def get_becon_train_data(csv_fm_list):
     
     for name in csv_fm_list:
         x_train, y_train, target = get_becon_FeatureModel(name,label)
-        ap_dic.update({target : label})
+        ap_dic.update({label : target})
         label += 1
         for data in x_train:
             feat_x_train.append(data)
@@ -236,6 +236,8 @@ def random_forest_model(data, target):
     rf = RandomForestClassifier(n_estimators=100,random_state=0)
     rf.fit(x_train,y_train)
 
+
     #accuracy_score test
-    y_pred = rf.predict(x_test)
-    print("accuracy score :", metrics.accuracy_score(y_test,y_pred))
+    #y_pred = rf.predict(x_test)
+    #print("accuracy score :", metrics.accuracy_score(y_test,y_pred))
+    return rf

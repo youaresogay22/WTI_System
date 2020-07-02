@@ -13,6 +13,9 @@ import machine_learn
 import file
 import filePath
 import copy
+import numpy as np
+import identify
+
 
 def packet_collect():
 
@@ -128,16 +131,21 @@ def beacon_process():
     bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc)
 
     x_train, y_train, ap_dic = machine_learn.get_becon_train_data(bc_csv_fm_list) #get training data
-
-    machine_learn.random_forest_model(x_train,y_train) # make AP identify model
-
+    
+    ap_model = machine_learn.random_forest_model(x_train,y_train) # make AP identify model
+    
+    return ap_model, ap_dic
 def main():
     #packet_collect() # collect the data
 
-    proReq_process() # preprocess the probe-request 
+    #proReq_process() # preprocess the probe-request 
  
-    #beacon_process() #preprocess the becon frame
+    ap_model, ap_dic = beacon_process() #preprocess the becon frame and get AP Identify Model
 
+    x_test = [["2.0517047924721744e-05","-91","1","3096","carlynne" ,"88:36:6c:67:72:ec"]]
+
+    identify.ap_identify(ap_model,ap_dic,x_test)
+    
 if __name__=="__main__":
     main()
 
