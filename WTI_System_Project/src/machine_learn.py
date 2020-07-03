@@ -14,12 +14,15 @@ import tensorflow.compat.v1 as tf
 import pickle
 import joblib
 import filePath
+import json
 
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
 
 """make training data
 make the time data list for the sequence number delta
@@ -190,7 +193,7 @@ def get_becon_FeatureModel(name,label):
         for row in rdr: #extract and process the x_train
             x_train.append(row[0:4]) #ClockSkew, RSS, channel, duration
             y_train.append(label) #SSID, MAC Address
-            target = tuple(row[4:6])
+            target = row[4:6]
     
     return x_train ,y_train, target
 
@@ -202,7 +205,7 @@ csv_fm_list : feature csv file names
 return
 feat_x_train : clock skew, RSS, channel, duration,
 feat_y_train : ssid,mac address
-ap_dic : key:(SSID,MAC Address), value:label
+ap_dic : key: label, value:(SSID,MAC Address)
 """
 def get_becon_train_data(csv_fm_list):
     feat_x_train = []
@@ -239,11 +242,13 @@ def random_forest_model(data, target):
     rf = RandomForestClassifier(n_estimators=100,random_state=0)
     rf.fit(x_train,y_train)
 
-
+    
     #accuracy_score test
     #y_pred = rf.predict(x_test)
-    #print("accuracy score :", metrics.accuracy_score(y_test,y_pred))
-    return 
+    #print("accuracy score :", metrics.accuracy_score(y_pred,y_test))
+    #print(classification_report(y_pred,y_test))
+
+    return rf
     
 """save the model
 param
@@ -261,3 +266,16 @@ filename : model filename to load
 def load_model(filename):
     load_path = filePath.model_path + filename
     return joblib.load(load_path)
+
+def save_ap_label(ap_dic,filename):
+    save_path = filePath.model_path + filename
+    
+    with open(save_path,"w") as json_file:
+        json.dump(ap_dic,json_file)
+
+def load_ap_label(filename):
+    load_path = filePath.model_path + filename
+
+    with open(load_path,"r") as json_file:
+        ap_dic = json.load(json_file)
+    return ap_dic

@@ -38,6 +38,7 @@ def packet_collect():
                     +filePath.csv_path)
     os.system("sudo chmod 777 "
                     +filePath.pf_path)
+                    
     """Capture the packet
     step1 Scan the becon frame or probe-request
     step2 select the frame field
@@ -135,20 +136,28 @@ def beacon_process():
     
     ap_model = machine_learn.random_forest_model(x_train,y_train) # make AP identify model
     
-    return ap_model, ap_dic
-def main():
-    packet_collect() # collect the data
-"""
-    #proReq_process() # preprocess the probe-request 
- 
-    ap_model, ap_dic = beacon_process() #preprocess the becon frame and get AP Identify Model
-
     file.make_Directory(filePath.model_path) #create the model dicrectory
  
-    machine_learn.save_model(ap_model,"filename.pkl") #save the model
+    machine_learn.save_model(ap_model,"ap_model.pkl") #save the model
+    
+    machine_learn.save_ap_label(ap_dic,"ap_label.json")#save the ap_dic
 
-    identify.ap_identify(ap_model,ap_dic,x_test)
-""" 
+    return ap_model, ap_dic
+def main():
+    #packet_collect() # collect the data
+
+    #proReq_process() # preprocess the probe-request 
+ 
+    beacon_process() #preprocess the becon frame and get AP Identify Model
+
+    ap_model = machine_learn.load_model("ap_model.pkl")
+
+    ap_dic = machine_learn.load_ap_label("ap_label.json")
+
+    #x_test = ["1.2490802157180465e-05","-21","9","2256","carlynne","88:36:6c:67:72:ec"]
+    
+    #identify.ap_identify(ap_model,ap_dic,x_test)
+
 if __name__=="__main__":
     main()
 
