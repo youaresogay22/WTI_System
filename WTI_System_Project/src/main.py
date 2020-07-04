@@ -142,21 +142,20 @@ def beacon_process():
     
     machine_learn.save_ap_label(ap_dic,"ap_label.json")#save the ap_dic
 
-    return ap_model, ap_dic
 def main():
     #packet_collect() # collect the data
 
     #proReq_process() # preprocess the probe-request 
  
-    beacon_process() #preprocess the becon frame and get AP Identify Model
+    #beacon_process() #preprocess the becon frame and get AP Identify Model
 
     ap_model = machine_learn.load_model("ap_model.pkl")
 
     ap_dic = machine_learn.load_ap_label("ap_label.json")
 
-    #x_test = ["1.2490802157180465e-05","-21","9","2256","carlynne","88:36:6c:67:72:ec"]
+    input = ["1.2490802157180465e-05","-21","9","2256","carlynne","88:36:6c:67:72:ec"]
     
-    #identify.ap_identify(ap_model,ap_dic,x_test)
+    identify.ap_identify(ap_model,ap_dic,input)
 
 if __name__=="__main__":
     main()
