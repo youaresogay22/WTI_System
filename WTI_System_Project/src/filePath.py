@@ -25,3 +25,9 @@ csv_probeRe_path = csv_path + "/probe_re.csv"
 csv_beacon_path = csv_path + "/beacon.csv"
 
 model_path = res_path + "/model/"
+
+scan_path = res_path + "/scan/"
+scan_probe_path = scan_path + "/probe/"
+scan_beacon_path = scan_path + "/beacon/"
+scan_beacon_data_path = scan_beacon_path + "/data.pcapng"
+scan_beacon_csv_path = scan_beacon_path + "/becon.csv"

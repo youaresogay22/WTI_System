@@ -98,45 +98,71 @@ Scan AP to create features of Becon frame
 
 param
 neti : network interface
-1. 네트워크 인터페이스를 설정하여 becon frame 3분 탐색
-2. becon frame 가공
-3. 만들어진 레코드 반환
+1. scan the beacon-frame during 3 minutes
+2. process the beacon-frame
+3. return the record 
 
 return
 bf_feature : [clock skew, channel, rss, duration, ssid, mac address]
 """
 def ap_scan(neti):
-    os.system("sudo tshark -i {} -w ".format(neti)
-                + filePath.pf_data_path
-                + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\'"
-                + " -a duration:{}".format(sec))
 
-"""make directory
-packet
- -probe
- -becon
-pcapng
-pcapng_csv
-model
-"""
-def init_directory():
-    """Make the Directory
-    Make the pcapng_folder, csv Directory 
+    os.system("sudo ifconfig {} down".format(neti))
+    os.system("sudo iwconfig {} mode monitor".format(neti))
+    os.system("sudo ifconfig {} up".format(neti))
+
+    os.system("sudo tshark -i {} -w ".format(neti)
+                + filePath.scan_beacon_data_path
+                + " -f \'wlan type mgt and (subtype beacon)\'"
+                + " -a duration:{}".format("180"))
+
+    collect.packet_filter(filePath.scan_beacon_data_path,csv_beacon_name=filePath.scan_beacon_csv_path
+                            ,filter="beacon")
+
+    bc_mac_list = []    # becon-frame wlan.sa list
+    bc_mac_pkt_dc = {}  # key: wlan.sa , value: becon-frame(2-D list)
+    bc_mac_csv_dc = {}  # key: wlan.sa, value: csv file names(list)
+    bc_csv_fm_list = [] # becon-frame feature csv file names(list)
+
+    bc_mac_list = prePro.extract_macAddress(filePath.scan_beacon_csv_path) # extract wlan.sa(mac address)
+
+    file.make_macDirectory(filePath.scan_beacon_path,bc_mac_list) # make Directory for each the wlan.sa
+
+    bc_mac_csv_dc = file.make_macCsvFile(filePath.scan_beacon_path,bc_mac_list,3,end_hour=1,end_min=3)
+
+    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.scan_beacon_csv_path,bc_mac_list)
+
+    file.save_csvFile(filePath.scan_beacon_path,bc_mac_pkt_dc,3) # save the becon-frame to csv file
+    
+    prePro.beacon_prepro(bc_mac_csv_dc) # preprocessor wlan.fixed.timestamp
+
+    #make becon-frame feature csv file for each wlan.sa
+    for mac_name in bc_mac_list:
+        file.make_csvFeature(filePath.scan_beacon_path,mac_name,frame="beacon")
+
+    """save the feature data
+    save the feature data for each the wlan.sa
+    return the feature file csv names list
     """
-    file.make_Directory(filePath.res_path)
-    file.make_Directory(filePath.packet_path)   #packet
-    file.make_Directory(filePath.probe_path)    #probe
-    file.make_Directory(filePath.beacon_path)   #becon
-    file.make_Directory(filePath.pf_path)       #pcapng
-    file.make_Directory(filePath.csv_path)      #pcapng_csv
-    file.make_Directory(filePath.model_path)    #model
+    bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc,becon_path=filePath.scan_beacon_path)
+
+    x_train, y_train , ap_dic = machine_learn.get_becon_train_data(bc_csv_fm_list) #x_train : [[clock skew, channel, rss, duration, ssid, mac address]]
+
+    input = []
+    for x, y in zip(x_train, y_train):
+        list1 = x
+        list2 = ap_dic[y]
+        input.append(list1+list2) #[[clock skew, channel, rss, duration, ssid, mac address]..[...]]
+    
+    return input
 
 def main():
-    #init_directory()
+    file.init_directory()
 
-    #collect.packet_collect("wlan1",5400) # collect the data
-
-    collect.packet_filter(filePath.pf_data_path) #convert the pcapng file to csv file
+    collect.packet_collect("wlan1",5400) # collect the data
+    
+    collect.packet_filter(filePath.pf_data_path,csv_beacon_name=filePath.csv_beacon_path,
+                            csv_probe_name=filePath.csv_probe_path, filter="all") #convert the pcapng file to csv file
 
     proReq_process() # preprocess the probe-request 
  
@@ -145,11 +171,13 @@ def main():
     ap_model = machine_learn.load_model("ap_model.pkl")
 
     ap_dic = machine_learn.load_ap_label("ap_label.json")
-
-    input = ["1.2490802157180465e-05","-21","9","2256","carlynne","88:36:6c:67:72:ec"]
     
-    identify.ap_identify(ap_model,ap_dic,input)
-
+    
+    while True:
+        input = ap_scan("wlan1")
+        
+        identify.ap_identify(ap_model,ap_dic,input)
+    
 if __name__=="__main__":
     main()
 

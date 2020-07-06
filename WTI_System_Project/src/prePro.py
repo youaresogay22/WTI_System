@@ -84,7 +84,7 @@ def beacon_prepro(bc_mac_csv_dc):
             with open(csv_file,"w") as f:
                 writer = csv.writer(f)
                 writer.writerows(bc_list) 
-            bc_list = []    #초기화
+            bc_list = []    #clear
 
 """get hour,minute
 params
@@ -95,7 +95,7 @@ return
 hour, minute
 """
 def trans_time(sec,interval):
-    #시간, 분 계산
+    #calculate hour, min
     s = sec
 
     h = int(s // 3600)

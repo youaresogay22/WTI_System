@@ -12,6 +12,31 @@ import machine_learn
 import filePath
 import prePro
 import pandas
+
+"""make directory
+res
+    packet
+        -probe
+        -becon
+    pcapng
+    pcapng_csv
+    model
+    scan
+        -probe
+        -beacon
+"""
+def init_directory():
+    make_Directory(filePath.res_path)      #res
+    make_Directory(filePath.packet_path)   #packet
+    make_Directory(filePath.probe_path)    #probe
+    make_Directory(filePath.beacon_path)   #becon
+    make_Directory(filePath.pf_path)       #pcapng
+    make_Directory(filePath.csv_path)      #pcapng_csv
+    make_Directory(filePath.model_path)    #model
+    make_Directory(filePath.scan_path)          #scan      
+    make_Directory(filePath.scan_probe_path)    #probe
+    make_Directory(filePath.scan_beacon_path)   #beacon
+
 """make the Directory
 remove the directory of path and
 create the directory to path(Arg)
@@ -134,11 +159,11 @@ def init_seq_FeatureFile(mac_csv_dc):
 
 param
 bc_mac_csv_dc  : key:wlan.sa, value: csv file name list
-
+becon_path : becon-frame directory for each mac address
 return
 csv_fm_list : feature csv file name list
 """
-def init_beacon_FeatureFile(bc_mac_csv_dc):
+def init_beacon_FeatureFile(bc_mac_csv_dc,becon_path=filePath.beacon_path):
     csv_fm_list = []    #csv feature csv file names
     bc_list = []
     x_train = []
@@ -183,7 +208,7 @@ def init_beacon_FeatureFile(bc_mac_csv_dc):
 
                     mac_addr = bc_list[0][0] # wlan.sa
                     
-                    csv_fm = filePath.beacon_path + key + "/" + key + "_FeatureModle.csv"
+                    csv_fm = becon_path + key + "/" + key + "_FeatureModle.csv"
                     
                     if csv_fm not in csv_fm_list:
                         csv_fm_list.append(csv_fm)
@@ -225,11 +250,12 @@ params
 path : save path
 mac_list : wlan.sa list
 m_interval : minute interval
-
+end_hour : iterator end number
+end_min : iterator end number
 return
 mac_csv_dc : key:wlan.sa, value : csv file name list
 """
-def make_macCsvFile(path,mac_list,m_interval):
+def make_macCsvFile(path, mac_list, m_interval, end_hour=24, end_min = 60):
     mac_csv_dc = {}
     csv_nameList = []
 
@@ -237,8 +263,8 @@ def make_macCsvFile(path,mac_list,m_interval):
         mac_csv_dc.update({mac_name:[]})
     
     for mac_name in mac_list:   #make csv file names
-        for hour in range(0,24,1):
-            for minute in range(0,60,m_interval):
+        for hour in range(0,end_hour,1):
+            for minute in range(0,end_min,m_interval):
                 str_hour = str(hour)
                 str_minute = str(minute)
                 if hour < 10:

@@ -21,13 +21,29 @@ def packet_collect(neti, sec,pcapng_name="data.pcapng"):
                     + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\'"
                     + " -a duration:{}".format(sec))
     
-def packet_filter(pcapng_name):
-    os.system("sudo tshark -r "
-                    + pcapng_name
-                    + " -Y \"wlan.fc.type_subtype==0x0004\""
-                    + " -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
-                    + filePath.csv_probe_path)
-    os.system("sudo tshark -r "
-                    + pcapng_name
-                    + " -Y \"wlan.fc.type_subtype==0x0008\" -T fields -e wlan.sa -e wlan.ssid -e wlan.fixed.timestamp -e frame.time_relative -e wlan.ds.current_channel -e wlan_radio.signal_dbm -e wlan_radio.duration -E separator=, -E quote=n -E header=y > "
-                    + filePath.csv_beacon_path)
+def packet_filter(pcapng_name, csv_beacon_name=filePath.csv_beacon_path,
+                     csv_probe_name=filePath.csv_probe_path, filter="all"):
+
+    if filter=="all":
+        os.system("sudo tshark -r "
+                        + pcapng_name
+                        + " -Y \"wlan.fc.type_subtype==0x0004\""
+                        + " -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
+                        + csv_probe_name)
+        os.system("sudo tshark -r "
+                        + pcapng_name
+                        + " -Y \"wlan.fc.type_subtype==0x0008\" -T fields -e wlan.sa -e wlan.ssid -e wlan.fixed.timestamp -e frame.time_relative -e wlan.ds.current_channel -e wlan_radio.signal_dbm -e wlan_radio.duration -E separator=, -E quote=n -E header=y > "
+                        + csv_beacon_name)
+
+    elif filter=="beacon":
+        os.system("sudo tshark -r "
+                        + pcapng_name
+                        + " -Y \"wlan.fc.type_subtype==0x0008\" -T fields -e wlan.sa -e wlan.ssid -e wlan.fixed.timestamp -e frame.time_relative -e wlan.ds.current_channel -e wlan_radio.signal_dbm -e wlan_radio.duration -E separator=, -E quote=n -E header=y > "
+                        + csv_beacon_name)
+
+    elif filter=="probe":
+        os.system("sudo tshark -r "
+                        + pcapng_name
+                        + " -Y \"wlan.fc.type_subtype==0x0004\""
+                        + " -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
+                        + csv_probe_name)
