@@ -14,19 +14,31 @@ input : [clock skew, channel, rss, duration, ssid, mac address]
 """
 def ap_identify(ap_model,ap_dic,input):
     target = input[4:6] # [ssid, mac address]
-    input = np.array(input[0:4]).reshape(1,-1)
+    input = np.array(input[0:4]).reshape(1,-1) # [[clock skew, channel, rss, duration]]
+    label = get_key(ap_dic,target) # 0, 1, ...
 
     #unknown ssid and mac address?
     if target not in ap_dic.values():
-        print("unknown ap")
+        print("Label : ",target)
+        print("The Ap is unknown AP")
     else:
         pred = str(ap_model.predict(input)[0]) #output the label => [0], [1] , [2], [3], [4]...
         proba_list = ap_model.predict_proba(input)
         proba = np.max(proba_list)
         ident = ap_dic[pred]
         
+
+        #classification result
+        print("Classification result : AP ",pred,", Label : AP ",label)
+        print("Proba : ", proba)
         if ident==target and proba>0.7:
-            print("정상 AP")
+            print("The Ap is authorized AP")
         else:
-            print("비인가 AP")
+            print("The Ap is suspected to be a rogue AP")
+    print("")
+
+def get_key(ap_dic,value):
+    for label, ident in ap_dic.items():
+        if ident==value:
+            return label
         

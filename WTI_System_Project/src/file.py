@@ -21,6 +21,8 @@ def make_Directory(path):
 
     if not os.path.exists(path):
         os.mkdir(path)
+        os.system("sudo chmod 777 "
+                        +path)      
         print("Directory ",path," created")
     else:
         print("Directory ",path," already exist")
@@ -30,11 +32,8 @@ create the directory for each the wlan.sa to the path(Arg)
 """
 def make_macDirectory(path,mac_list):
     for mac_name in mac_list:
-        if not os.path.exists(path+mac_name):
-            os.mkdir(path+mac_name)
-            print("Directory ",path,mac_name, " created")
-        else:
-            print("Directory ",path,mac_name, " already exist")
+        os.system("sudo rm -r {}".format(path+mac_name))
+        os.system("sudo mkdir {}".format(path+mac_name))
 
 """make feature csv file
 make feature csv file about probe-request or becon-frame

@@ -9,12 +9,19 @@ todo :
 import os 
 
 path = os.getcwd()
-probe_path = path + "/probe/"
-beacon_path = path + "/beacon/"
-pf_path = path + "/pcapng_folder"
+
+res_path = path + "/../res/"
+
+packet_path = res_path + "/packet/"
+probe_path = packet_path + "/probe/"
+beacon_path = packet_path + "/beacon/"
+
+pf_path = res_path + "/pcapng"
 pf_data_path = pf_path + "/data.pcapng"
-csv_path = path + "/csv"
+
+csv_path = res_path + "/pcapng_csv"
 csv_probe_path = csv_path + "/probe.csv"
 csv_probeRe_path = csv_path + "/probe_re.csv"
 csv_beacon_path = csv_path + "/beacon.csv"
-model_path = path + "/model/"
+
+model_path = res_path + "/model/"
