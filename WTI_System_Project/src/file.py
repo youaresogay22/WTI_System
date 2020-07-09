@@ -68,9 +68,9 @@ def make_csvFeature(path,mac,frame="seq"):
     with open(csvFeatureFileName,"w") as f:
         writer = csv.writer(f)
         if frame=="seq":
-            writer.writerow(["delta seq no","length","label"])
+            writer.writerow(["delta seq no","length","mac address"])
         elif frame=="beacon":
-            writer.writerow(["Clock skew","RSS","Channel","duration","SSID","MAC Address"])
+            writer.writerow(["Clock skew","RSS","Channel","duration","SSID","label"])
 
 """add frame data
 add frame data about probe-request or becon-frame to csv file
@@ -118,8 +118,9 @@ def init_seq_FeatureFile(mac_csv_dc):
     seqNum_list = []    #sequence number delta
     csv_fm_list = []      #feature csv file names
     W = 0                     #delta
-    label = 0                 #label
-
+    label = 0
+    mac_addr = None
+    device_dic = {}         # key:label value : mac address
     for key,value in mac_csv_dc.items():
     
         for idx in range(len(value)):
@@ -135,24 +136,30 @@ def init_seq_FeatureFile(mac_csv_dc):
                 continue
             else:
                 W = float(machine_learn.tensor_linear_regression(x_train,y_train)) #get seqeuce number delta
+                #W = float(machine_learn.sklearn_linear_regression(x_train,y_train)) #get seqeuce number delta
+            
             
             csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
-
+            
             if csv_fm not in csv_fm_list: #save the featuremodel.csv name
                 csv_fm_list.append(csv_fm)
 
             
             with open(csvFile,"r") as f:    #save the length
                 rdr = csv.reader(f)
-                length = rdr.__next__()[4]
+                temp_rdr = rdr.__next__()
+                length = temp_rdr[4]
+                mac_addr = temp_rdr[0]
+                
             
             with open(csv_fm,"a") as f: #write the probe-request features
                 feature_lline = [W,length,label]
                 writer = csv.writer(f)
                 writer.writerow(feature_lline)
-                   
-        label += 1
-    return csv_fm_list
+            
+            device_dic.update({label:mac_addr})
+        label +=1
+    return csv_fm_list, device_dic
 
 #beacon frame value 초기화
 """write the becon-frame feature

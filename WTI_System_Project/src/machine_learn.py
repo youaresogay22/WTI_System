@@ -146,7 +146,27 @@ def get_proReq_FeatureModel(name):
             y_train.append(list(map(int,row[-1])))  # conver all str list to integer list
 
     return x_train, y_train
- 
+
+def get_proReq_AVG_FeatureModel(name):
+    x_train = []
+    y_train = None
+    with open(name,"r") as f:
+        rdr = csv.reader(f)
+        next(rdr,None) #header skip
+        length = 0
+        delta_seq_list = []
+        sum = 0
+        for row in rdr:
+            delta_seq_list.append(float(row[0]))
+            length = int(row[1])
+            y_train = int(row[2])
+        
+        for i in range(len(delta_seq_list)):
+            sum += delta_seq_list[i]
+
+        delta_seq_avg = sum / len(delta_seq_list)
+        x_train.append([delta_seq_avg,length])
+    return x_train, y_train
 """get training data
 get probe-request training data to use the random forest
 
@@ -172,6 +192,19 @@ def get_proReq_train_data(csv_fm_list):
 
     return feat_x_train, feat_y_train
 
+def get_proReq_train_data_AVG(csv_fm_list):
+    feat_x_train = []
+    feat_y_train = []
+    
+    #get feature data and then save the training data
+    for name in csv_fm_list:
+        x_train, y_train = get_proReq_AVG_FeatureModel(name)
+        
+        for data in x_train: #reduce the x_train data
+            feat_x_train.append(data)
+        feat_y_train.append(y_train)
+
+    return feat_x_train, feat_y_train
 """get feature data
 get x_train, y_train data to use the random forest model
 x_train : ClockSkew, RSS, channel, duration
@@ -244,9 +277,9 @@ def random_forest_model(data, target):
 
     
     #accuracy_score test
-    #y_pred = rf.predict(x_test)
-    #print("accuracy score :", metrics.accuracy_score(y_pred,y_test))
-    #print(classification_report(y_pred,y_test))
+    y_pred = rf.predict(x_test)
+    print("accuracy score :", metrics.accuracy_score(y_pred,y_test))
+    print(classification_report(y_pred,y_test))
 
     return rf
     
@@ -267,15 +300,15 @@ def load_model(filename):
     load_path = filePath.model_path + filename
     return joblib.load(load_path)
 
-def save_ap_label(ap_dic,filename):
+def save_label_dic(dic,filename):
     save_path = filePath.model_path + filename
     
     with open(save_path,"w") as json_file:
-        json.dump(ap_dic,json_file)
+        json.dump(dic,json_file)
 
-def load_ap_label(filename):
+def load_label_dic(filename):
     load_path = filePath.model_path + filename
 
     with open(load_path,"r") as json_file:
-        ap_dic = json.load(json_file)
-    return ap_dic
+        dic = json.load(json_file)
+    return dic

@@ -1,4 +1,4 @@
-Clock skew,RSS,Channel,duration,SSID,MAC Address
+Clock skew,RSS,Channel,duration,SSID,label
 1.4218738352008504e-05,-91,11,3080,KT_GiGA_2G_Wave2_6CCF,88:3c:1c:b4:6c:d3
 1.1581958853405598e-05,-91,11,3080,KT_GiGA_2G_Wave2_6CCF,88:3c:1c:b4:6c:d3
 1.1124827507030413e-05,-91,11,3080,KT_GiGA_2G_Wave2_6CCF,88:3c:1c:b4:6c:d3
