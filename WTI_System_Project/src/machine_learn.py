@@ -115,8 +115,8 @@ def tensor_linear_regression(x_train,y_train):
     hypothesis = x_train*W+b
     cost = tf.reduce_mean(tf.square(hypothesis-y_train))
 
-    #optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
-    optimizer = tf.train.MomentumOptimizer(learning_rate=0.0001,momentum=0.9)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001)
+    #optimizer = tf.train.MomentumOptimizer(learning_rate=0.001,momentum=0.9)
     train = optimizer.minimize(cost)
 
     sess=tf.Session()
@@ -271,15 +271,18 @@ data : clock skew, RSS, channel, duration,
 target : ssid,mac address
 """
 def random_forest_model(data, target):
+    """
     x_train, x_test, y_train, y_test = train_test_split(data,target,test_size=0.3,random_state=0)
     rf = RandomForestClassifier(n_estimators=100,random_state=0)
     rf.fit(x_train,y_train)
-
+    """
+    rf = RandomForestClassifier(n_estimators=100,random_state=0)
+    rf.fit(data,target)
     
     #accuracy_score test
-    y_pred = rf.predict(x_test)
-    print("accuracy score :", metrics.accuracy_score(y_pred,y_test))
-    print(classification_report(y_pred,y_test))
+    #y_pred = rf.predict(x_test)
+    #print("accuracy score :", metrics.accuracy_score(y_pred,y_test))
+    #print(classification_report(y_pred,y_test))
 
     return rf
     

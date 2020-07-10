@@ -1,9 +1,12 @@
 """
 title : Wireless terminal identification system
 author : YONG HWAN KIM (yh.kim951107@gmail.com)
-date : 2020-07-06
+date : 2020-07-09
 detail : 
 todo :
+1.시퀀스 넘버 전처리를 mac마다 따로해서 수행
+2.mac과 10분간격으로 분류한 파일마다 따로해서 수행
+기울기가 잘나오는지 연구해야함
 """
 
 import csv
@@ -34,6 +37,7 @@ def proReq_process():
     
     mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10) # make csv file names list for each the wlan.sa
 
+    #mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
     mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
 
     file.save_csvFile(filePath.probe_path,mac_pkt_dc,10) # save the probe-request data to the csv file for each the time
@@ -178,9 +182,9 @@ def main():
         if cmd_num=="1":
             file.init_directory()
         elif cmd_num=="2":
-            #temp = input("input the network interface and duration('wlan1' 3600) : ").split(" ")
-            #neti, duration = temp[0], temp[1]
-            #collect.packet_collect(neti,duration) # collect the data
+            temp = input("input the network interface and duration('wlan1' 3600) : ").split(" ")
+            neti, duration = temp[0], temp[1]
+            collect.packet_collect(neti,duration) # collect the data
 
             print(".pcapng file list")
             os.system("ls {} | grep '.*[.]pcapng'".format(filePath.pf_path))
