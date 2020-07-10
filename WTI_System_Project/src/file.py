@@ -68,9 +68,9 @@ def make_csvFeature(path,mac,frame="seq"):
     with open(csvFeatureFileName,"w") as f:
         writer = csv.writer(f)
         if frame=="seq":
-            writer.writerow(["delta seq no","length","mac address"])
+            writer.writerow(["delta seq no","length","label"])
         elif frame=="beacon":
-            writer.writerow(["Clock skew","RSS","Channel","duration","SSID","label"])
+            writer.writerow(["Clock skew","RSS","Channel","duration","SSID","Mac address"])
 
 """add frame data
 add frame data about probe-request or becon-frame to csv file
