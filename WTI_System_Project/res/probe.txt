@@ -1,0 +1,175 @@
+#시퀀스 넘버 가공 부분 (메모)
+dev_list =[
+"2c:33:7a:2b:79:3a",
+"34:08:04:9b:31:79",
+"80:2b:f9:f1:5e:e9",
+"88:36:6c:f9:ca:76",
+"04:cf:8c:89:18:47",
+"ac:fd:ce:b0:da:79",
+"58:65:e6:70:38:be",
+"1c:f2:9a:69:bf:0b",
+"a8:2b:b9:b9:de:42",
+"0c:1c:20:0c:38:84",
+"60:36:dd:5e:d0:9e",
+"7c:38:ad:28:05:48",
+"ac:d1:b8:cb:6b:cb"
+]
+
+csvname = "1118 to 1122_total_day"
+dummy = 0
+for _sa in dev_list:
+    dev_bssid = _sa.replace(":","_")
+    ospath = "./separated/" + csvname + "/" + dev_bssid
+    
+    if not os.path.isdir(ospath):
+        os.mkdir(ospath)
+    
+    dummy = data[data["wlan.sa"] == _sa]
+    print(_sa)
+    indd = []
+    timedif = []
+    leng = []
+    seqno = []
+    for i in range(len(dummy)):
+        #print(i, dummy.iloc[i]["wlan.seq"], dummy.iloc[0]["wlan.seq"])
+        if i != 0 and dummy.iloc[i]["wlan.seq"] - dummy.iloc[i-1]["wlan.seq"] < 0:
+            indd.append(i)
+
+        timedif.append(dummy.iloc[i]["frame.time_relative"] - dummy.iloc[0]["frame.time_relative"])
+        leng.append(dummy.iloc[i]["frame.len"] - len(dummy.iloc[i]["wlan.ssid"]))
+
+
+    #print(dummy.iloc[indd]["wlan.seq"])
+    print(indd)
+    for i in range(len(indd)):
+        if i == len(indd) - 1:
+            dummy.iloc[indd[i]:]["wlan.seq"] = dummy.iloc[indd[i]:]["wlan.seq"] + 4096 * (i+1)
+        else:
+            print(i)
+            dummy.iloc[indd[i]:indd[i+1]]["wlan.seq"] = dummy.iloc[indd[i]:indd[i+1]]["wlan.seq"] + 4096 * (i+1)
+            #print(i,dummy.iloc[i]["wlan.seq"])
+    for i in range(len(dummy)):
+        seqno.append(dummy.iloc[i]["wlan.seq"] - dummy.iloc[0]["wlan.seq"])     
+
+    #print(dummy["wlan.sa"], len(timedif) , len(seqno) , len(leng))
+    newdummy = pd.DataFrame({'sa' : dummy["wlan.sa"], 'timedifference':timedif, 'sequence no':seqno, 'length':leng})
+    
+    for i in range(5):
+        ret = newdummy[newdummy['timedifference'] >= (i*86400) ][newdummy['timedifference'] < 86400*(i+1)]
+        filename = ospath + "/"+dev_bssid +"_" + str(i)+ ".csv"
+        ret.to_csv(filename, mode = "w")
+        print(filename)
+        
+    #filename = ospath+ ".csv"
+    #newdummy.to_csv(filename, mode = "w")
+    
+print("finish")
+
+///////////////////////////////////////////////////////////////////////////////
+csvname = "1118 to 1122_total_day"
+dev_name = []
+ap_name = []
+data_list = []
+data_size = []
+
+deltatime = []
+deltaseq = []
+
+for dev in dev_list:
+    for i in range(5):
+        dev_bssid = dev.replace(":","_")
+        
+        #ospath = "./separated/" + csvname + "/devide30/" + dev_bssid
+        #filename = ospath + "/"+dev_bssid +"_" + str(i//2) +"_"+str((i%2)*30)+ ".csv"
+        
+        #ospath = "./separated/" + csvname + "/devide10/" + dev_bssid
+        #filename = ospath + "/"+dev_bssid +"_" + str(i//6) +"_"+str((i%6)*10)+ ".csv"
+        
+        #ospath = "./separated/" + csvname + "/" + dev_bssid
+        #filename = ospath + "/"+dev_bssid +"_" + str(i//6) +"_"+str((i%6)*10)+ ".csv"
+        
+        ospath = "./separated/" + csvname + "/" + dev_bssid
+        filename = ospath + "/"+dev_bssid +"_" + str(i)+ ".csv"
+        
+        #ospath = "./separated/" + csvname + "/" + dev_bssid
+        #filename = ospath + "/"+dev_bssid +"_" + str(i//20) +"_"+str((i%20)*3)+ ".csv"
+        
+        dev_name.append(filename)
+        
+        df = pd.read_csv(filename)
+        data_list.append(df)
+        data_size.append(len(df))
+        #deltatime.append(list(map(float, df["time_different"][0:].tolist() ) ))
+        deltatime.append(df["timedifference"])
+        deltaseq.append(df["sequence no"])
+
+///////////////////
+dt = []
+ds = []
+for t,s in zip(deltatime, deltaseq):
+    temp1 = []
+    temp2 = []
+    for i in range(len(t)):
+        temp1.append(t[i] - t[0])
+        temp2.append(s[i] - s[0])
+    dt.append(temp1)
+    ds.append(temp2)
+
+///////////////////////////////////////////////////////////////////////
+import tensorflow as tf
+
+W = tf.Variable(tf.random_normal([1]))
+b = tf.Variable(tf.random_normal([1]))
+
+X = tf.placeholder(tf.float32, shape=[None])
+Y = tf.placeholder(tf.float32, shape=[None])
+
+
+
+hypothesis = X * W + b
+
+cost = tf.reduce_mean(tf.square(hypothesis - Y))
+
+
+optimizer = tf.train.GradientDescentOptimizer(learning_rate = 0.00000000001)
+train = optimizer.minimize(cost)
+pattern = []
+pred = []
+costt = []
+sess = tf.Session()
+
+for i in range(len(dev_name)):
+    sess.run(tf.global_variables_initializer())
+    tempcost = []
+    for step in range(500):
+        _, cost_val, W_val, b_val = sess.run([train, cost, W, b], feed_dict={X: dt[i], Y: ds[i]})
+        tempcost.append(W_val)
+        #print(step, W_val, cost_val, b_val)
+    print(dev_name[i], step, W_val, cost_val)
+    pattern.append(W_val)
+    pred.append( W_val * ds[i] + b_val)
+    costt.append(tempcost)
+
+//////////////////////////////
+#f = open("probe_신규데이터프로브2.txt",'w')
+f = open("probe_신규데이터프로브_토탈_트레이닝13개.txt",'w')
+for i in pattern:
+    f.write(str(i[0]))
+    f.write(",")
+f.close()
+
+/////////////////////////
+train = [[pattern[0][0], 97], [pattern[1][0], 273], [pattern[2][0],140], [pattern[3][0],273], [pattern[4][0]],97]
+test = [[pattern[5][0], 94], [pattern[6][0], 124], [pattern[7][0],128], [pattern[8][0],197], [pattern[9][0]],223]
+/////////////////////////
+from scipy import spatial
+tmp = []
+dataa = ["0","1","2","3","4"]
+for i in train:
+    x = spatial.distance.euclidean(test[5], i)
+    tmp.append(1/(1+x))
+if max(tmp) < 0.75:
+    print("This is unauthorized device. \nSimialrity is ", max(tmp))
+else:
+    print("This is ",  dataa[tmp.index(max(tmp))],"\nSimialrity is", max(tmp))
+print(tmp)
