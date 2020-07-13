@@ -11,13 +11,13 @@ import copy
 import filePath
 import pandas as pd
 import math
-
+import os
 from pandas import DataFrame
 
 """preprocessor wlan.seq
 convert 0~4096 to 0~infinite
 """
-def preReq_Prepro():
+def preReq_Prepro(probe_name,probeRe_name):
     seq_list = []               #wlan.seq
     seq_temp_list = []    #temp wlan.seq
     length_list = []          #frame.len
@@ -27,7 +27,7 @@ def preReq_Prepro():
     """get probe-request data
     save the data to list about wlan.seq, frame.len, wlan.ssid
     """
-    csv_file = pd.read_csv(filePath.csv_probe_path)
+    csv_file = pd.read_csv(probe_name)
     seq_list = list(csv_file["wlan.seq"])
     length_list = list(csv_file["frame.len"])
     ssid_list = list(csv_file["wlan.ssid"])
@@ -46,7 +46,68 @@ def preReq_Prepro():
     csv_file["frame.len"] = length_list
     
     data_df = DataFrame(csv_file)
-    data_df.to_csv(filePath.csv_probeRe_path,sep=",",na_rep="NaN",index=False) #write csv file
+    data_df.to_csv(probeRe_name,sep=",",na_rep="NaN",index=False) #write csv file
+
+def prepro_seq():
+    dev_list = []
+    file_list = [filePath.csv_probe_path]
+    df_list = []
+
+    for i in file_list:
+        df = pd.read_csv(i,error_bad_lines=False)
+        df = df.fillna("")
+        df_list.append(df)
+
+    data = df_list[0]
+    mac_list = list(set(data["wlan.sa"]))
+    
+    dev_list = copy.deepcopy(mac_list)
+    csvname = "probe"
+    dummy = 0
+
+    os.system("sudo rm -rf "+filePath.csv_probeRe_path)
+
+    for _sa in dev_list:    
+        dummy = data[data["wlan.sa"] == _sa]
+        #print(_sa)
+        indd = []
+        timedif = []
+        leng = []
+        seqno = []
+        for i in range(len(dummy)):
+            #print(i, dummy.iloc[i]["wlan.seq"], dummy.iloc[0]["wlan.seq"])
+            if i != 0 and dummy.iloc[i]["wlan.seq"] - dummy.iloc[i-1]["wlan.seq"] < 0:
+                indd.append(i)
+
+            timedif.append(dummy.iloc[i]["frame.time_relative"] - dummy.iloc[0]["frame.time_relative"])
+            leng.append(dummy.iloc[i]["frame.len"] - len(dummy.iloc[i]["wlan.ssid"]))
+
+
+        #print(dummy.iloc[indd]["wlan.seq"])
+        #print(indd)
+        for i in range(len(indd)):
+            if i == len(indd) - 1:
+                dummy.iloc[indd[i]:]["wlan.seq"] = dummy.iloc[indd[i]:]["wlan.seq"] + 4096 * (i+1)
+            else:
+                #print(i)
+                dummy.iloc[indd[i]:indd[i+1]]["wlan.seq"] = dummy.iloc[indd[i]:indd[i+1]]["wlan.seq"] + 4096 * (i+1)
+                #print(i,dummy.iloc[i]["wlan.seq"])
+        for i in range(len(dummy)):
+            seqno.append(dummy.iloc[i]["wlan.seq"] - dummy.iloc[0]["wlan.seq"])     
+
+        #print(dummy["wlan.sa"], len(timedif) , len(seqno) , len(leng))
+        newdummy = pd.DataFrame({'sa' : dummy["wlan.sa"], 'timedifference':timedif, 'sequence no':seqno, 'length':leng})
+
+        newdummy.to_csv(filePath.csv_probeRe_path,mode="a",header=False,index=False)
+        """
+        for i in range(5):
+            ret = newdummy[newdummy['timedifference'] >= (i*86400) ][newdummy['timedifference'] < 86400*(i+1)]
+            filename = ospath + "/"+dev_bssid +"_" + str(i)+ ".csv"
+            ret.to_csv(filename, mode = "w")
+            print(filename)
+        """
+        #filename = ospath+ ".csv"
+        #newdummy.to_csv(filename, mode = "w")
 
 """preprocessor becon-frame data
 process the wlan.fixed.timestamp data

@@ -115,7 +115,7 @@ def tensor_linear_regression(x_train,y_train):
     hypothesis = x_train*W+b
     cost = tf.reduce_mean(tf.square(hypothesis-y_train))
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0000001)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.00000000001)
     #optimizer = tf.train.MomentumOptimizer(learning_rate=0.001,momentum=0.9)
     train = optimizer.minimize(cost)
 

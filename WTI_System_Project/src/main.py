@@ -19,7 +19,8 @@ import copy
 import numpy as np
 import identify
 import collect
-import testPro
+import testset
+
 
 def proReq_process():
     mac_list = []           # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
@@ -29,16 +30,19 @@ def proReq_process():
     feat_x_train = []    # random forest model x_train
     feat_y_train = []    # random forest model y_train
     device_dic = {}         # key:label value: mac address
-    prePro.preReq_Prepro()  # preprocessor wlan.seq(sequence number)
 
-    mac_list = prePro.extract_macAddress(filePath.csv_probe_path)   # extract wlan.sa(mac address)
+    prePro.preReq_Prepro(filePath.learn_csv_probe_path,filePath.learn_csv_probeRe_path)  # preprocessor wlan.seq(sequence number)
+
+    #prePro.prepro_seq()
+
+    mac_list = prePro.extract_macAddress(filePath.learn_csv_probe_path)   # extract wlan.sa(mac address)
     
     file.make_macDirectory(filePath.probe_path,mac_list) # make each wlan.sa Directory
     
     mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10) # make csv file names list for each the wlan.sa
 
     #mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
-    mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
+    mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
 
     file.save_csvFile(filePath.probe_path,mac_pkt_dc,10) # save the probe-request data to the csv file for each the time
 
@@ -47,7 +51,7 @@ def proReq_process():
         file.make_csvFeature(filePath.probe_path,mac_name,"seq")
 
 
-    csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc) #a dd the feature data
+    csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc, filePath.probe_path) #a dd the feature data
 
     feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # return the training data about the probe-request
 
@@ -66,7 +70,7 @@ def beacon_process():
     bc_csv_fm_list = []   # becon-frame feature csv file names(list)
     ap_dic = {} # key : (ssid,MAC Address), value: label
     
-    bc_mac_list = prePro.extract_macAddress(filePath.csv_beacon_path) # extract wlan.sa(mac address)
+    bc_mac_list = prePro.extract_macAddress(filePath.learn_csv_beacon_path) # extract wlan.sa(mac address)
     
     file.make_macDirectory(filePath.beacon_path,bc_mac_list) # make Directory for each the wlan.sa
 
@@ -80,7 +84,7 @@ def beacon_process():
     extract becon-frame for each the wlan.sa
     return the becon-frame dictionary for each wlan.sa
     """
-    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.csv_beacon_path,bc_mac_list)
+    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_beacon_path,bc_mac_list)
 
     file.save_csvFile(filePath.beacon_path,bc_mac_pkt_dc,3) # save the becon-frame to csv file
 
@@ -176,23 +180,23 @@ def main():
                         +"4: ap scan\n"
                         +"5: device scan\n"
                         +"6: exit\n"
-                        +"7: process the probe-request test data\n"
+                        +"7: create test set\n"
                         +"8: test the probe-request\n")
 
         if cmd_num=="1":
             file.init_directory()
         elif cmd_num=="2":
-            temp = input("input the network interface and duration('wlan1' 3600) : ").split(" ")
-            neti, duration = temp[0], temp[1]
-            collect.packet_collect(neti,duration) # collect the data
+            #temp = input("input the network interface and duration('wlan1' 3600) : ").split(" ")
+            #neti, duration = temp[0], temp[1]
+            #collect.packet_collect(neti,duration) # collect the data
 
             print(".pcapng file list")
             os.system("ls {} | grep '.*[.]pcapng'".format(filePath.pf_path))
             pcapng_name = input("input the file name to filter the pcapng file(data.pcpapng) : ")
             pcapng_path = filePath.pf_path +"/"+ pcapng_name
 
-            collect.packet_filter(pcapng_path,csv_beacon_name=filePath.csv_beacon_path,
-                                    csv_probe_name=filePath.csv_probe_path, filter="all") #convert the pcapng file to csv file                            
+            collect.packet_filter(pcapng_path,csv_beacon_name=filePath.learn_csv_beacon_path,
+                                    csv_probe_name=filePath.learn_csv_probe_path, filter="all") #convert the pcapng file to csv file                            
 
         elif cmd_num=="3":
             proReq_process() # preprocess the probe-request 
@@ -211,45 +215,49 @@ def main():
         elif cmd_num=="6":
             return;
         elif cmd_num=="7":
-            x_test = testPro.proReq_testInputPorcess()
-            print("x_test : ",x_test)
-            with open("x_test.csv","w") as f:
+            print(".pcapng file list")
+            os.system("ls {} | grep '.*[.]pcapng'".format(filePath.pf_path))
+            pcapng_name = input("input the file name to filter the pcapng file(data.pcpapng) : ")
+            pcapng_path = filePath.pf_path +"/"+ pcapng_name
+
+            collect.packet_filter(pcapng_path,csv_beacon_name=filePath.test_csv_beacon_path,
+                                    csv_probe_name=filePath.test_csv_probe_path, filter="all") #convert the pcapng file to csv file                            
+
+
+            proReq_input = testset.proReq_createTestset()
+            
+            with open(filePath.packet_test_probe_csv_path,"w") as f:
                 writer = csv.writer(f)
-                writer.writerows(x_test)
+                writer.writerows(proReq_input)
+
+            beacon_input = testset.beacon_createTestset()
+
+            with open(filePath.packet_test_beacon_csv_path,"w") as f:
+                writer = csv.writer(f)
+                writer.writerows(beacon_input)
+
         elif cmd_num=="8":
             device_model = machine_learn.load_model("device_model.pkl")
             device_dic = machine_learn.load_label_dic("device_label.json")
-            x_test = []
-            with open("x_test.csv","r") as f:
+            proReq_input = []
+            with open(filePath.packet_test_probe_csv_path,"r") as f:
                 rdr = csv.reader(f)
                 for line in rdr:
-                    x_test.append(line)
-            testPro.proReq_test(device_model,device_dic,x_test)
+                    proReq_input.append(line)
+            testset.packet_test(device_model,device_dic,proReq_input)
+
+            ap_model = machine_learn.load_model("ap_model.pkl")
+            ap_dic = machine_learn.load_label_dic("ap_label.json")
+            beacon_input = []
+            with open(filePath.packet_test_beacon_csv_path,"r") as f:
+                rdr = csv.reader(f)
+                for line in rdr:
+                    beacon_input.append(line)
+            testset.packet_test(ap_model, ap_dic, beacon_input)
+            
         else:
             print("This is an invalid the command!!")
-            continue
-"""
-    file.init_directory()
 
-    collect.packet_collect("wlan1",5400) # collect the data
-    
-    collect.packet_filter(filePath.pf_data_path,csv_beacon_name=filePath.csv_beacon_path,
-                            csv_probe_name=filePath.csv_probe_path, filter="all") #convert the pcapng file to csv file
-
-    proReq_process() # preprocess the probe-request 
- 
-    beacon_process() #preprocess the becon frame and get AP Identify Model
-    
-    ap_model = machine_learn.load_model("ap_model.pkl")
-
-    ap_dic = machine_learn.load_ap_label("ap_label.json")
-    
-    
-    while True:
-        input = ap_scan("wlan1")
-        
-        identify.ap_identify(ap_model,ap_dic,input)
-""" 
 if __name__=="__main__":
     main()
 

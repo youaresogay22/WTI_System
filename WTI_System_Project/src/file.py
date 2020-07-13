@@ -29,14 +29,22 @@ def init_directory():
     make_Directory(filePath.res_path)      #res
     make_Directory(filePath.packet_path)   #packet
     make_Directory(filePath.probe_path)    #probe
+    make_Directory(filePath.probe_test_path) #probe_test
     make_Directory(filePath.beacon_path)   #becon
+    make_Directory(filePath.beacon_test_path) #becon_test
     make_Directory(filePath.pf_path)       #pcapng
     make_Directory(filePath.csv_path)      #pcapng_csv
+    make_Directory(filePath.pcapng_csv_learn) #learn
+    make_Directory(filePath.pcapng_csv_test) #test
     make_Directory(filePath.model_path)    #model
     make_Directory(filePath.scan_path)          #scan      
     make_Directory(filePath.scan_probe_path)    #probe
     make_Directory(filePath.scan_beacon_path)   #beacon
-
+    make_Directory(filePath.packet_test)    #packet_test
+    make_Directory(filePath.packet_test_probe_path) #probe
+    make_Directory(filePath.packet_test_beacon_path) #beacon
+    
+ 
 """make the Directory
 remove the directory of path and
 create the directory to path(Arg)
@@ -113,7 +121,7 @@ def read_csv(csvfile):
 write the sequnce number delta, length, label.
 sequence number delta is saved to using linear_regression.
 """
-def init_seq_FeatureFile(mac_csv_dc):
+def init_seq_FeatureFile(mac_csv_dc,probe_path):
     time_list = []          #frame.time_relative
     seqNum_list = []    #sequence number delta
     csv_fm_list = []      #feature csv file names
@@ -129,9 +137,10 @@ def init_seq_FeatureFile(mac_csv_dc):
             x_train = machine_learn.make_timeRelative_list(csvFile)
             y_train = machine_learn.make_seqNumberList(csvFile)
             
-            if len(x_train)<15:
+            
+            if len(x_train)<14:
                 continue
-
+            
             if not x_train or not y_train:
                 continue
             else:
@@ -139,7 +148,7 @@ def init_seq_FeatureFile(mac_csv_dc):
                 #W = float(machine_learn.sklearn_linear_regression(x_train,y_train)) #get seqeuce number delta
             
             
-            csv_fm = filePath.probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
+            csv_fm = probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
             
             if csv_fm not in csv_fm_list: #save the featuremodel.csv name
                 csv_fm_list.append(csv_fm)

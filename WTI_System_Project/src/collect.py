@@ -22,8 +22,8 @@ def packet_collect(neti, sec,pcapng_name="data.pcapng"):
                     + " -a duration:{}".format(sec))
     
     
-def packet_filter(pcapng_name, csv_beacon_name=filePath.csv_beacon_path,
-                     csv_probe_name=filePath.csv_probe_path, filter="all"):
+def packet_filter(pcapng_name, csv_beacon_name=filePath.learn_csv_beacon_path,
+                     csv_probe_name=filePath.learn_csv_probe_path, filter="all"):
 
     if filter=="all":
         os.system("sudo tshark -r "
