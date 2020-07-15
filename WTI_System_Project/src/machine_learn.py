@@ -1,7 +1,7 @@
 """
 title : mechine learing moudle
 author : YONG HWAN KIM (yh.kim951107@gmail.com)
-date : 2020-06-22
+date : 2020-07-15
 detail : 
 todo :
 """
@@ -24,56 +24,65 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 
-"""make training data
-make the time data list for the sequence number delta
+"""x_train 추출
+timedifference를 구한다.
+각각의 파일에서 time_relative를 참조하고 해당 파일의 0번째 time_relative를 빼서
+timedifference를 구한다.
 
 parmas
-csvFile : file to open for the frame.time_relative data
+csvFile : 참조하고자 하는 파일
 
 return
-time_list : frame.time_relative data list in csvFile
+delta_time : t_i - t_0 식을 적용한 리스트
 """
-def make_timeRelative_list(csvFile):    
+def make_timeRelative_list(csvFile):
+    delta_time = []    
     with open(csvFile,"r") as f:
         rdr = csv.reader(f)
-        #time_list = prePro.extract_data_index(rdr,1) #extract frame.time_relative list
         time_list = list(map(float,prePro.extract_data_index(rdr,1)))
-    return time_list
+
+        if time_list != []:
+            time_0 = float(time_list[0])
+            for idx in range(len(time_list)):
+                delta_time.append((float(time_list[idx])-time_0))
+    return delta_time
 
 
-"""make training data
-make the sequence number data list for the sequence number delta
+"""y_train 추출
+각각의 파일에서 wlan.seq를 참조하여 해당 파일의 0번째 wlan.seq를 빼서
+sequence number difference 리스트를 새성하여 반환한다.
 
 params
-csvFile : file to open for the wlan.seq data
+csvFile : 참조하고자 하는 파일
 
 return
-seqNum_list : wlan.seq data list
+delta_seqNum_list : s_i - s_0을 계산한 시퀀스넘버 차이 리스트 
 """
 def make_seqNumberList(csvFile):
-    seqNum_0 = 0    # 0th wlan.seq data
-    seqNum_list = []
+    seqNum_0 = 0    # 0번째 시퀀스넘버 데이터
+    delta_seqNum_list = []
     
     with open(csvFile,"r") as f:
         rdr = csv.reader(f)
-        temp_seqNum_list = prePro.extract_data_index(rdr,2) #extract wlan.seq data
+        temp_seqNum_list = prePro.extract_data_index(rdr,2) # wlan.seq 추출
 
-        if temp_seqNum_list!=[]: # is not empty list
+        if temp_seqNum_list!=[]:
             seqNum_0 = float(temp_seqNum_list[0])
             for idx in range(len(temp_seqNum_list)):
-                    seqNum_list.append((float(temp_seqNum_list[idx]) - seqNum_0))
+                    #seuqnce number difference를 계산한다.
+                    delta_seqNum_list.append((float(temp_seqNum_list[idx]) - seqNum_0))
 
-    return seqNum_list
+    return del_ta_seqNum_list
 
-#선형 모델 기울기 반환
-"""get click skew
+
+"""clock skew 기울기 계산
 
 becon-frame
 x_train : wlan.fixed.timestamp list
 y_train : i th frame.time_relative - 0th frame.time_relative) - i th wlan.fixed.timestamp, data list
 
 return
-becon-frame : clock skew
+line_fitter.coef_ : clock skew
 """
 def sklearn_linear_regression(x_train,y_train):
     
@@ -85,7 +94,7 @@ def sklearn_linear_regression(x_train,y_train):
     
     return line_fitter.coef_
 
-"""get sequence number delta
+"""시퀀스 넘버 증가율(delta seq no) 계산
 params
 probe-request
 x_train : frame.time_relative
@@ -115,7 +124,7 @@ def tensor_linear_regression(x_train,y_train):
     hypothesis = x_train*W+b
     cost = tf.reduce_mean(tf.square(hypothesis-y_train))
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.00000000001)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.000005)
     #optimizer = tf.train.MomentumOptimizer(learning_rate=0.001,momentum=0.9)
     train = optimizer.minimize(cost)
 
@@ -123,12 +132,12 @@ def tensor_linear_regression(x_train,y_train):
     sess.run(tf.global_variables_initializer())
     
     for step in range(501):
-        #_, cost_val, W_val, b_val = sess.run(train)
         sess.run(train)
         if step%100 == 0:
             print(step,sess.run(cost), sess.run(W), x_scaler.inverse_transform(sess.run(b).reshape(-1,1)))
     
     return sess.run(W)
+
 
 ##############################################################################
 """get feature data
@@ -225,10 +234,29 @@ def get_becon_FeatureModel(name,label):
 
         for row in rdr: #extract and process the x_train
             x_train.append(row[0:4]) #ClockSkew, RSS, channel, duration
-            y_train.append(label) #SSID, MAC Address
-            target = row[4:6]
+            y_train.append(label) 
+            target = row[4:6] #SSID, MAC Address
     
     return x_train ,y_train, target
+
+def get_becon_test_FeatureModel(name,ap_label):
+    x_train = []
+    y_train = []
+    target = ()
+    with open(name,"r") as f:
+        rdr = csv.reader(f)
+        next(rdr,None) #header skip
+
+        for row in rdr: #extract and process the x_train
+            x_train.append(row[0:4]) #ClockSkew, RSS, channel, duration 
+            target = row[4:6] #SSID, MAC Address
+
+            for label, value in ap_label.items():
+                if target==value:
+                    y_train.append(label)
+            
+    return x_train ,y_train
+
 
 """get becon-frame training data
 
@@ -257,6 +285,21 @@ def get_becon_train_data(csv_fm_list):
     
     
     return feat_x_train, feat_y_train, ap_dic
+    
+def get_becon_test_train_data(csv_fm_list,ap_label):
+    feat_x_train = []
+    feat_y_train = []
+
+    for name in csv_fm_list:
+        x_train,y_train = get_becon_test_FeatureModel(name,ap_label)
+        
+        for data in x_train:
+            feat_x_train.append(data)
+        for data in y_train:
+            feat_y_train.append(data)
+    
+    
+    return feat_x_train, feat_y_train
 
 """create device identify model
 model type is random forest model
@@ -271,19 +314,8 @@ data : clock skew, RSS, channel, duration,
 target : ssid,mac address
 """
 def random_forest_model(data, target):
-    """
-    x_train, x_test, y_train, y_test = train_test_split(data,target,test_size=0.3,random_state=0)
-    rf = RandomForestClassifier(n_estimators=100,random_state=0)
-    rf.fit(x_train,y_train)
-    """
     rf = RandomForestClassifier(n_estimators=100,random_state=0)
     rf.fit(data,target)
-    
-    #accuracy_score test
-    #y_pred = rf.predict(x_test)
-    #print("accuracy score :", metrics.accuracy_score(y_pred,y_test))
-    #print(classification_report(y_pred,y_test))
-
     return rf
     
 """save the model
@@ -295,6 +327,12 @@ def save_model(model, filename):
     save_path = filePath.model_path + filename
     joblib.dump(model, save_path)
 
+def save_label_dic(dic,filename):
+    save_path = filePath.model_path + filename
+    
+    with open(save_path,"w") as json_file:
+        json.dump(dic,json_file)
+
 """load the model
 param
 filename : model filename to load
@@ -302,12 +340,6 @@ filename : model filename to load
 def load_model(filename):
     load_path = filePath.model_path + filename
     return joblib.load(load_path)
-
-def save_label_dic(dic,filename):
-    save_path = filePath.model_path + filename
-    
-    with open(save_path,"w") as json_file:
-        json.dump(dic,json_file)
 
 def load_label_dic(filename):
     load_path = filePath.model_path + filename

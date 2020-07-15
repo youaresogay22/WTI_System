@@ -1,12 +1,10 @@
 """
 title : Wireless terminal identification system
 author : YONG HWAN KIM (yh.kim951107@gmail.com)
-date : 2020-07-09
+date : 2020-07-15
 detail : 
 todo :
-1.시퀀스 넘버 전처리를 mac마다 따로해서 수행
-2.mac과 10분간격으로 분류한 파일마다 따로해서 수행
-기울기가 잘나오는지 연구해야함
+
 """
 
 import csv
@@ -22,103 +20,102 @@ import collect
 import testset
 
 
+"""probe-request 가공
+probe-request를 전처리 및 학습 모델 생성
+"""
 def proReq_process():
-    mac_list = []           # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
+    mac_list = []       # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
     mac_pkt_dc = {}     # key:wlan.sa, value: probe-request(list)
     mac_csv_dc = {}     # key:wlan.sa, value: csv file names(list)
-    csv_fm_list = []      # feature model file names for each wlan.sa(mac address)
-    feat_x_train = []    # random forest model x_train
-    feat_y_train = []    # random forest model y_train
-    device_dic = {}         # key:label value: mac address
+    csv_fm_list = []    # feature model file names for each wlan.sa(mac address)
+    feat_x_train = []   # random forest model x_train
+    feat_y_train = []   # random forest model y_train
+    device_dic = {}     # key:label value: mac address
+    label = 0
 
-    prePro.preReq_Prepro(filePath.learn_csv_probe_path,filePath.learn_csv_probeRe_path)  # preprocessor wlan.seq(sequence number)
+    collect.device_filter(filePath.learn_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
 
-    #prePro.prepro_seq()
+    prePro.prepro_seq(filePath.learn_csv_probe_path,filePath.learn_csv_probeRe_path) #시퀀스 넘버 전처리
 
-    mac_list = prePro.extract_macAddress(filePath.learn_csv_probe_path)   # extract wlan.sa(mac address)
+    mac_list = prePro.extract_macAddress(filePath.learn_csv_probe_path)   # 맥주소 추출
     
-    file.make_macDirectory(filePath.probe_path,mac_list) # make each wlan.sa Directory
+    mac_list.sort() # 맥주소 정렬
+
+    file.make_macDirectory(filePath.probe_path,mac_list) # 맥주소별 디렉토리 생성
     
-    mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10) # make csv file names list for each the wlan.sa
+    mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10) # 맥주소별 time csv 파일 생성
 
-    #mac_pkt_dc = prePro.extract_packetLine(filePath.csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
-    mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_probeRe_path,mac_list) # extract probe-request for each the wlan.sa
+    mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_probeRe_path,mac_list) # 패킷 데이터 추출
 
-    file.save_csvFile(filePath.probe_path,mac_pkt_dc,10) # save the probe-request data to the csv file for each the time
+    file.save_csvFile(filePath.probe_path,mac_pkt_dc,10) # csv파일에 데이터 저장
 
     # make feature csv file for each the wlan.sa
     for mac_name in mac_list:
         file.make_csvFeature(filePath.probe_path,mac_name,"seq")
 
+    for key in mac_csv_dc.keys():
+        device_dic.update({label:key})
+        label += 1
 
-    csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc, filePath.probe_path) #a dd the feature data
+    csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc, filePath.probe_path, device_dic) #a dd the feature data
 
-    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # return the training data about the probe-request
+    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # 학습 데이터 생성
 
-    #feat_x_train, feat_y_train = machine_learn.get_proReq_train_data_AVG(csv_fm_list) # return the training data about the probe-request
-
-    device_model = machine_learn.random_forest_model(feat_x_train,feat_y_train) # make Device identify model
+    device_model = machine_learn.random_forest_model(feat_x_train,feat_y_train) # 무선단말 식별 모델 생성
 
     machine_learn.save_model(device_model,"device_model.pkl")
 
     machine_learn.save_label_dic(device_dic,"device_label.json")
 
+"""becon-frame 가공
+becon-frame을 전처리 및 가공하여 학습 모델 생성
+"""
 def beacon_process():
-    bc_mac_list = []        # becon-frame wlan.sa list
+    bc_mac_list = []    # 맥주소 리스트
     bc_mac_pkt_dc = {}  # key: wlan.sa , value: becon-frame(2-D list)
     bc_mac_csv_dc = {}  # key: wlan.sa, value: csv file names(list)
-    bc_csv_fm_list = []   # becon-frame feature csv file names(list)
-    ap_dic = {} # key : (ssid,MAC Address), value: label
+    bc_csv_fm_list = [] # becon-frame feature csv file names(list)
+    ap_dic = {}         # key : (ssid,MAC Address), value: label
     
-    bc_mac_list = prePro.extract_macAddress(filePath.learn_csv_beacon_path) # extract wlan.sa(mac address)
+    bc_mac_list = prePro.extract_macAddress(filePath.learn_csv_beacon_path) # 맥주소 추출
     
-    file.make_macDirectory(filePath.beacon_path,bc_mac_list) # make Directory for each the wlan.sa
+    bc_mac_list.sort() # 맥주소 정렬
 
-    """make csv file
-    make becon-frame csv file
-    return the csv file names list for each the wlan.sa
-    """
-    bc_mac_csv_dc = file.make_macCsvFile(filePath.beacon_path,bc_mac_list,3)
+    file.make_macDirectory(filePath.beacon_path,bc_mac_list) # 맥주소별 디렉토리 생성
 
-    """extract the becon-frame
-    extract becon-frame for each the wlan.sa
-    return the becon-frame dictionary for each wlan.sa
-    """
-    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_beacon_path,bc_mac_list)
+    bc_mac_csv_dc = file.make_macCsvFile(filePath.beacon_path,bc_mac_list,3) #time별 csv파일 생성
 
-    file.save_csvFile(filePath.beacon_path,bc_mac_pkt_dc,3) # save the becon-frame to csv file
+    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_beacon_path,bc_mac_list) #becon-frame데이터 추출
 
-    prePro.beacon_prepro(bc_mac_csv_dc) # preprocessor wlan.fixed.timestamp
+    file.save_csvFile(filePath.beacon_path,bc_mac_pkt_dc,3) # time별 csv파일에 데이터 저장
 
-    #make becon-frame feature csv file for each wlan.sa
+    prePro.beacon_prepro(bc_mac_csv_dc) # wlan.fixed.timestamp 전처리
+
+    # featuremodel.csv 파일 생성
     for mac_name in bc_mac_list:
         file.make_csvFeature(filePath.beacon_path,mac_name,frame="beacon")
 
-    """save the feature data
-    save the feature data for each the wlan.sa
-    return the feature file csv names list
-    """
-    bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc)
+    bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc) # featuremodel.csv파일에 데이터 저장
 
-    x_train, y_train, ap_dic = machine_learn.get_becon_train_data(bc_csv_fm_list) #get training data
+    x_train, y_train, ap_dic = machine_learn.get_becon_train_data(bc_csv_fm_list) # 학습데이터 생성
     
-    ap_model = machine_learn.random_forest_model(x_train,y_train) # make AP identify model
+    ap_model = machine_learn.random_forest_model(x_train,y_train) # AP식별 모델 생성
     
-    machine_learn.save_model(ap_model,"ap_model.pkl") #save the model
+    machine_learn.save_model(ap_model,"ap_model.pkl")
     
-    machine_learn.save_label_dic(ap_dic,"ap_label.json") #save the ap_dic
+    machine_learn.save_label_dic(ap_dic,"ap_label.json")
 
 """AP scan
-Scan AP to create features of Becon frame
+becon-frame 수집 후 가공 데이터로 만들어 식별 모델에 넣기 위한 데이터 형식으로 만들어 반환한다.
 
 param
 neti : network interface
-1. scan the beacon-frame during 3 minutes
-2. process the beacon-frame
-3. return the record 
+1. 3분동안 becon-frame을 수집한다.
+2. becon-frame을 가공한다.
+3. feature record를 반환한다.
 
 return
-bf_feature : [clock skew, channel, rss, duration, ssid, mac address]
+bc_input : [clock skew, channel, rss, duration, ssid, mac address]
 """
 def ap_scan(neti):
 
@@ -134,31 +131,28 @@ def ap_scan(neti):
     collect.packet_filter(filePath.scan_beacon_data_path,csv_beacon_name=filePath.scan_beacon_csv_path
                             ,filter="beacon")
 
-    bc_mac_list = []    # becon-frame wlan.sa list
+    bc_mac_list = []    # 맥주소 리스트
     bc_mac_pkt_dc = {}  # key: wlan.sa , value: becon-frame(2-D list)
     bc_mac_csv_dc = {}  # key: wlan.sa, value: csv file names(list)
-    bc_csv_fm_list = [] # becon-frame feature csv file names(list)
+    bc_csv_fm_list = [] # featuremodel.csv 파일 이름 리스트
 
-    bc_mac_list = prePro.extract_macAddress(filePath.scan_beacon_csv_path) # extract wlan.sa(mac address)
+    bc_mac_list = prePro.extract_macAddress(filePath.scan_beacon_csv_path) # 맥주소 추출
 
-    file.make_macDirectory(filePath.scan_beacon_path,bc_mac_list) # make Directory for each the wlan.sa
+    file.make_macDirectory(filePath.scan_beacon_path,bc_mac_list) # 맥주소별 디렉토리 생성
 
     bc_mac_csv_dc = file.make_macCsvFile(filePath.scan_beacon_path,bc_mac_list,3,end_hour=1,end_min=3)
 
-    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.scan_beacon_csv_path,bc_mac_list)
+    bc_mac_pkt_dc = prePro.extract_packetLine(filePath.scan_beacon_csv_path,bc_mac_list) # 패킷 데이터 추출
 
-    file.save_csvFile(filePath.scan_beacon_path,bc_mac_pkt_dc,3) # save the becon-frame to csv file
+    file.save_csvFile(filePath.scan_beacon_path,bc_mac_pkt_dc,3) # csv파일에 데이터 저장
     
-    prePro.beacon_prepro(bc_mac_csv_dc) # preprocessor wlan.fixed.timestamp
+    prePro.beacon_prepro(bc_mac_csv_dc) # wlan.fixed.timestamp 전처리
 
-    #make becon-frame feature csv file for each wlan.sa
+    # featuremodel.csv 파일 생성
     for mac_name in bc_mac_list:
         file.make_csvFeature(filePath.scan_beacon_path,mac_name,frame="beacon")
 
-    """save the feature data
-    save the feature data for each the wlan.sa
-    return the feature file csv names list
-    """
+    # featuremodel.csv 파일에 데이터 저장
     bc_csv_fm_list = file.init_beacon_FeatureFile(bc_mac_csv_dc,becon_path=filePath.scan_beacon_path)
 
     x_train, y_train , ap_dic = machine_learn.get_becon_train_data(bc_csv_fm_list) #x_train : [[clock skew, channel, rss, duration, ssid, mac address]]
@@ -199,8 +193,8 @@ def main():
                                     csv_probe_name=filePath.learn_csv_probe_path, filter="all") #convert the pcapng file to csv file                            
 
         elif cmd_num=="3":
-            proReq_process() # preprocess the probe-request 
-            beacon_process() #preprocess the becon frame and get AP Identify Model\
+            proReq_process() # probe-request 가공
+            beacon_process() # becon-frame 가공 및 학습 모델 생성
             ap_model = machine_learn.load_model("ap_model.pkl")
             ap_dic = machine_learn.load_label_dic("ap_label.json")
             device_model = machine_learn.load_model("device_model.pkl")
@@ -224,14 +218,16 @@ def main():
                                     csv_probe_name=filePath.test_csv_probe_path, filter="all") #convert the pcapng file to csv file                            
 
 
-            proReq_input = testset.proReq_createTestset()
+            proReq_input = testset.proReq_createTestset() # 테스트 데이터 생성
             
+            # 테스트 데이터 저장
             with open(filePath.packet_test_probe_csv_path,"w") as f:
                 writer = csv.writer(f)
                 writer.writerows(proReq_input)
 
-            beacon_input = testset.beacon_createTestset()
+            beacon_input = testset.beacon_createTestset() # 테스트 데이터 생성
 
+            # 테스트 데이터 저장
             with open(filePath.packet_test_beacon_csv_path,"w") as f:
                 writer = csv.writer(f)
                 writer.writerows(beacon_input)
@@ -240,20 +236,31 @@ def main():
             device_model = machine_learn.load_model("device_model.pkl")
             device_dic = machine_learn.load_label_dic("device_label.json")
             proReq_input = []
+            y_test = []
+
+            # 테스트 데이터 참조
             with open(filePath.packet_test_probe_csv_path,"r") as f:
                 rdr = csv.reader(f)
                 for line in rdr:
-                    proReq_input.append(line)
-            testset.packet_test(device_model,device_dic,proReq_input)
+                    proReq_input.append(line[:-1])  # [[delta seq no, length], ...]
+                    y_test.append(int(line[-1]))    # [label]
+
+            # 테스트 데이터 평가
+            testset.packet_test(device_model,device_dic,proReq_input,y_test)
 
             ap_model = machine_learn.load_model("ap_model.pkl")
             ap_dic = machine_learn.load_label_dic("ap_label.json")
             beacon_input = []
+            bc_y_test = []
+            # 테스트 데이터 참조
             with open(filePath.packet_test_beacon_csv_path,"r") as f:
                 rdr = csv.reader(f)
                 for line in rdr:
-                    beacon_input.append(line)
-            testset.packet_test(ap_model, ap_dic, beacon_input)
+                    beacon_input.append(line[:-1])  # [[clock skew, channel, rss, duration, ssid, mac address]...[...]] 
+                    bc_y_test.append(int(line[-1])) # [label]
+                    
+            # 테스트 데이터 평가
+            testset.packet_test(ap_model, ap_dic, beacon_input, bc_y_test)
             
         else:
             print("This is an invalid the command!!")

@@ -1,9 +1,9 @@
 """
 title : function about the file module
 author : YONG HWAN KIM (yh.kim951107@gmail.com)
-date : 2020-06-22
+date : 2020-07-14
 detail : 
-todo :
+todo : init.. 함수에서 label 싱크로를 맞춰주어야함
 """
 
 import os
@@ -121,33 +121,38 @@ def read_csv(csvfile):
 write the sequnce number delta, length, label.
 sequence number delta is saved to using linear_regression.
 """
-def init_seq_FeatureFile(mac_csv_dc,probe_path):
+def init_seq_FeatureFile(mac_csv_dc, probe_path, device_dic):
     time_list = []          #frame.time_relative
     seqNum_list = []    #sequence number delta
     csv_fm_list = []      #feature csv file names
     W = 0                     #delta
-    label = 0
-    mac_addr = None
-    device_dic = {}         # key:label value : mac address
+    label_val = 0
+
     for key,value in mac_csv_dc.items():
     
         for idx in range(len(value)):
             csvFile = value[idx]           
-            #x_train, y_train = read_csv(csvFile)
             x_train = machine_learn.make_timeRelative_list(csvFile)
             y_train = machine_learn.make_seqNumberList(csvFile)
+            
             
             
             if len(x_train)<14:
                 continue
             
+            if key in device_dic.values():
+                for dd_label, mac in device_dic.items():
+                    if mac==key:
+                        label_val = dd_label
+                        break
+            else:
+                continue
+
             if not x_train or not y_train:
                 continue
             else:
                 W = float(machine_learn.tensor_linear_regression(x_train,y_train)) #get seqeuce number delta
-                #W = float(machine_learn.sklearn_linear_regression(x_train,y_train)) #get seqeuce number delta
-            
-            
+                
             csv_fm = probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
             
             if csv_fm not in csv_fm_list: #save the featuremodel.csv name
@@ -157,17 +162,14 @@ def init_seq_FeatureFile(mac_csv_dc,probe_path):
             with open(csvFile,"r") as f:    #save the length
                 rdr = csv.reader(f)
                 temp_rdr = rdr.__next__()
-                length = temp_rdr[4]
-                mac_addr = temp_rdr[0]
-                
+                length = temp_rdr[3]
+
             
             with open(csv_fm,"a") as f: #write the probe-request features
-                feature_lline = [W,length,label]
+                feature_lline = [W,length,label_val]
                 writer = csv.writer(f)
                 writer.writerow(feature_lline)
             
-            device_dic.update({label:mac_addr})
-        label +=1
     return csv_fm_list, device_dic
 
 #beacon frame value 초기화

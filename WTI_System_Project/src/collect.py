@@ -1,5 +1,6 @@
 import os
 import filePath
+import csv
 
 def packet_collect(neti, sec,pcapng_name="data.pcapng"):
 
@@ -48,3 +49,24 @@ def packet_filter(pcapng_name, csv_beacon_name=filePath.learn_csv_beacon_path,
                         + " -Y \"wlan.fc.type_subtype==0x0004\""
                         + " -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
                         + csv_probe_name)
+
+def device_filter(filename):
+    dev_list = [
+        "84:2e:27:6b:53:df",
+        "3c:a0:67:85:86:1b",
+        "94:d7:71:fc:67:c9",
+        "f8:e6:1a:f1:d6:49",
+        "00:f4:6f:9e:c6:eb"
+    ]
+
+    dummy = []
+    with open(filename,"r") as f:
+        rdr = csv.reader(f)
+        dummy.append(["wlan.sa","frame.time_relative","wlan.seq","wlan.ssid","frame.len"])
+        for line in rdr:
+            if line[0] in dev_list:
+                dummy.append(line)
+    
+    with open(filename,"w") as f:
+        writer = csv.writer(f)
+        writer.writerows(dummy)
