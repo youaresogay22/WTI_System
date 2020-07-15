@@ -72,7 +72,7 @@ def make_seqNumberList(csvFile):
                     #seuqnce number difference를 계산한다.
                     delta_seqNum_list.append((float(temp_seqNum_list[idx]) - seqNum_0))
 
-    return del_ta_seqNum_list
+    return delta_seqNum_list
 
 
 """clock skew 기울기 계산
@@ -156,26 +156,6 @@ def get_proReq_FeatureModel(name):
 
     return x_train, y_train
 
-def get_proReq_AVG_FeatureModel(name):
-    x_train = []
-    y_train = None
-    with open(name,"r") as f:
-        rdr = csv.reader(f)
-        next(rdr,None) #header skip
-        length = 0
-        delta_seq_list = []
-        sum = 0
-        for row in rdr:
-            delta_seq_list.append(float(row[0]))
-            length = int(row[1])
-            y_train = int(row[2])
-        
-        for i in range(len(delta_seq_list)):
-            sum += delta_seq_list[i]
-
-        delta_seq_avg = sum / len(delta_seq_list)
-        x_train.append([delta_seq_avg,length])
-    return x_train, y_train
 """get training data
 get probe-request training data to use the random forest
 
@@ -201,19 +181,6 @@ def get_proReq_train_data(csv_fm_list):
 
     return feat_x_train, feat_y_train
 
-def get_proReq_train_data_AVG(csv_fm_list):
-    feat_x_train = []
-    feat_y_train = []
-    
-    #get feature data and then save the training data
-    for name in csv_fm_list:
-        x_train, y_train = get_proReq_AVG_FeatureModel(name)
-        
-        for data in x_train: #reduce the x_train data
-            feat_x_train.append(data)
-        feat_y_train.append(y_train)
-
-    return feat_x_train, feat_y_train
 """get feature data
 get x_train, y_train data to use the random forest model
 x_train : ClockSkew, RSS, channel, duration

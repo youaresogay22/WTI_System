@@ -53,9 +53,9 @@ def packet_filter(pcapng_name, csv_beacon_name=filePath.learn_csv_beacon_path,
 def device_filter(filename):
     dev_list = [
         "84:2e:27:6b:53:df",
-        "3c:a0:67:85:86:1b",
+        "ac:36:13:5b:00:45",
         "94:d7:71:fc:67:c9",
-        "f8:e6:1a:f1:d6:49",
+        #"18:83:31:9b:75:ad",
         "00:f4:6f:9e:c6:eb"
     ]
 
