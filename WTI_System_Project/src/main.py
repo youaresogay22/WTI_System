@@ -33,7 +33,7 @@ def proReq_process():
     device_dic = {}     # key:label value: mac address
     label = 0
 
-    collect.device_filter(filePath.learn_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
+    #collect.device_filter(filePath.learn_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
 
     prePro.prepro_seq(filePath.learn_csv_probe_path,filePath.learn_csv_probeRe_path) #시퀀스 넘버 전처리
 
