@@ -49,9 +49,10 @@ def proReq_process():
     for mac in mac_list:
         device_dic.update({label:mac})
         label += 1
-        
+    
+    
     #csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc, filePath.probe_path, device_dic) #a dd the feature data
-    file.init_seq_FeatureFile2(mac_list, filePath.probe_path, device_dic) #a dd the feature data
+    file.init_seq_FeatureFile2(data, mac_list, filePath.probe_path, device_dic) #a dd the feature data
     """
     feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # 학습 데이터 생성
 

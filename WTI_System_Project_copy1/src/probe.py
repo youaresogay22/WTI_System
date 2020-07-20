@@ -81,54 +81,7 @@ def separate_probe(dev_list,data):
             filename = ospath + "/" + dev_bssid + "_" + str(i//6) + "_" + str((i%6)*10) + ".csv"
             ret.to_csv(filename, mode="w")
 
-
-def process_delta(dev_list):
-    global dev_name
-    ap_name = []
-    data_list = []
-    data_size = []
-
-    deltatime=[]
-    deltaseq = []
-    lost = []
-
-    global csvname
-
-    for dev in dev_list:
-        for i in range(144):
-            dev_bssid = dev.replace(":","_")
-
-            #ospath = "./separated/" + csvname + "/" + dev_bssid
-            ospath = filePath.packet_path + "/" + csvname + "/" + dev_bssid
-            
-            filename = ospath + "/" + dev_bssid + "_" + str(i//6) + "_" + str((i%6)*10) + ".csv"
-
-            try:
-                df = pd.read_csv(filename)
-                dev_name.append(filename)
-                data_list.append(df)
-                data_size.append(len(df))
-
-                deltatime.append(df["timedifference"])
-                deltaseq.append(df["sequence no"])
-            except:
-                lost.append([dev,i])
-                continue
-    
-    dt = []
-    ds = []
-    for t,s in zip(deltatime, deltaseq):
-        temp1 = []
-        temp2 = []
-        for i in range(len(t)):
-            temp1.append(t[i]-t[0])
-            temp2.append(s[i]-s[0])
-        dt.append(temp1)
-        ds.append(temp2)
-
-    return dt, ds
-
-def process_delta2(dev):
+def process_delta(dev):
     global dev_name
     ap_name = []
     data_list = []

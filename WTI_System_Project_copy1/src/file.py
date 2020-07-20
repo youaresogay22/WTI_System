@@ -76,7 +76,7 @@ def make_csvFeature(path,mac,frame="seq"):
     if frame=="seq":
         mac = mac.replace(":","_")
 
-    csvFeatureFileName = path+mac+"/"+mac+"_"+"FeatureModle.csv"
+    csvFeatureFileName = path+mac+"/"+mac+"_"+"FeatureModel.csv"
     with open(csvFeatureFileName,"w") as f:
         writer = csv.writer(f)
         if frame=="seq":
@@ -170,21 +170,43 @@ def init_seq_FeatureFile(mac_csv_dc, probe_path, device_dic):
 
             
             with open(csv_fm,"a") as f: #write the probe-request features
-                feature_lline = [W,length,label_val]
+                feature_line = [W,length,label_val]
                 writer = csv.writer(f)
-                writer.writerow(feature_lline)
+                writer.writerow(feature_line)
             
     return csv_fm_list, device_dic
 
-def init_seq_FeatureFile2(mac_list, probe_path, device_dic):
+def init_seq_FeatureFile2(data, mac_list, probe_path, device_dic):
     for mac in mac_list:
-        dt, ds = probe.process_delta2(mac)
+        dt, ds = probe.process_delta(mac)
         pattern = probe.linear_regression(dt,ds)
         
-        for item in pattern:
-            print(item[0])
+        #FeatureModel.csv 파일 경로 설정
+        dev_bssid = mac.replace(":","_")
+        ospath = filePath.probe_path + dev_bssid + "/" + dev_bssid + "_FeatureModel.csv"
 
-            
+        #시퀀스 넘버 증가율들을 리스트에 저장한다.
+        delta_seq_list = []
+        for item in pattern:
+            delta_seq_list.append(item[0])
+
+        #패킷 길이 저장
+        temp_data = data[data["wlan.sa"]==mac]
+        length = temp_data.iloc[0]["frame.len"]-len(temp_data.iloc[0]["wlan.ssid"])
+
+        #레이블 설정
+        label = 0
+        for key, value in device_dic.items():
+            if value==mac:
+                label = key
+        
+        with open(ospath,"a") as f:
+            feature_line = [delta_seq_list]
+            writer = csv.writer(f)
+            writer.writerows(feature_line)
+        
+
+        
     
 
 #beacon frame value 초기화
