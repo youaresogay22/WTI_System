@@ -166,12 +166,12 @@ return
 feat_x_train : sequence number delta, length
 feat_y_train : label
 """
-def get_proReq_train_data(csv_fm_list):
+def get_proReq_train_data(fm_name_list):
     feat_x_train = []
     feat_y_train = []
     
     #get feature data and then save the training data
-    for name in csv_fm_list:
+    for name in fm_name_list:
         x_train, y_train = get_proReq_FeatureModel(name)
         
         for data in x_train: #reduce the x_train data

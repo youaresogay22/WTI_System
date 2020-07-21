@@ -12,6 +12,7 @@ import machine_learn
 import prePro
 import numpy as np
 import collect
+import probe
 
 from sklearn import metrics
 from sklearn.metrics import accuracy_score
@@ -24,38 +25,28 @@ feat_x_train : [[delta seq no, length, label], ...]
 """
 def proReq_createTestset():
     mac_list = []       # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
-    mac_pkt_dc = {}     # key:wlan.sa, value: probe-request(list)
-    mac_csv_dc = {}     # key:wlan.sa, value: csv file names(list)
-    csv_fm_list = []    # feature model file names for each wlan.sa(mac address)
     feat_x_train = []   # random forest model x_train
     feat_y_train = []   # random forest model y_train
     device_dic = {}     # key:label value: mac address
+    label = 0
 
-    #collect.device_filter(filePath.test_csv_probe_path) #지정한 디바이스 probe-request 패킷만을 필터링한다.
-
-    prePro.prepro_seq(filePath.test_csv_probe_path,filePath.test_csv_probeRe_path) # probe.csv 파일을 참조하여 맥별로 시퀀스 전처리 수행
+    collect.device_filter(filePath.test_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
 
     mac_list = prePro.extract_macAddress(filePath.test_csv_probe_path)   # 맥주소 추출
-    
-    mac_list.sort()
 
-    file.make_macDirectory(filePath.probe_test_path,mac_list) # 맥주소별 디렉토리 생성
-    
-    mac_csv_dc = file.make_macCsvFile(filePath.probe_test_path,mac_list,10) # 맥주소와 time별로 구분한 csv파일 생성
+    data = probe.read_probe(filePath.test_csv_probe_path)
 
-    mac_pkt_dc = prePro.extract_packetLine(filePath.test_csv_probeRe_path,mac_list) # 맥주소별 패킷 분류
+    probe.separate_probe(mac_list,data,csvname="probe_test")
 
-    file.save_csvFile(filePath.probe_test_path,mac_pkt_dc,10) # csv파일에 저장
-
-    # featuremodel.csv 파일 생성
+    # make feature csv file for each the wlan.sa
     for mac_name in mac_list:
         file.make_csvFeature(filePath.probe_test_path,mac_name,"seq")
 
     device_dic = machine_learn.load_label_dic("device_label.json")
 
-    csv_fm_list, _ = file.init_seq_FeatureFile(mac_csv_dc,filePath.probe_test_path,device_dic) #featuremodel.csv파일에 데이터 입력
-
-    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # 테스트 데이터 추출
+    fm_name_list = file.init_seq_FeatureFile(data, mac_list, filePath.probe_test_path, device_dic,csvname="probe_test") #a dd the feature data
+    
+    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(fm_name_list) # 학습 데이터 생성
 
     feat_y_train = np.reshape(feat_y_train,(-1,1)) # [0,1,2] => [[0],[1],[2]]
 

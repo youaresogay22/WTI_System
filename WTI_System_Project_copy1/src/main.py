@@ -26,9 +26,6 @@ probe-request를 전처리 및 학습 모델 생성
 """
 def proReq_process():
     mac_list = []       # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
-    mac_pkt_dc = {}     # key:wlan.sa, value: probe-request(list)
-    mac_csv_dc = {}     # key:wlan.sa, value: csv file names(list)
-    csv_fm_list = []    # feature model file names for each wlan.sa(mac address)
     feat_x_train = []   # random forest model x_train
     feat_y_train = []   # random forest model y_train
     device_dic = {}     # key:label value: mac address
@@ -50,18 +47,17 @@ def proReq_process():
         device_dic.update({label:mac})
         label += 1
     
+    fm_name_list = file.init_seq_FeatureFile(data, mac_list, filePath.probe_path, device_dic) #a dd the feature data
     
-    #csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc, filePath.probe_path, device_dic) #a dd the feature data
-    file.init_seq_FeatureFile2(data, mac_list, filePath.probe_path, device_dic) #a dd the feature data
-    """
-    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # 학습 데이터 생성
+    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(fm_name_list) # 학습 데이터 생성
+
 
     device_model = machine_learn.random_forest_model(feat_x_train,feat_y_train) # 무선단말 식별 모델 생성
-
+    
     machine_learn.save_model(device_model,"device_model.pkl")
 
     machine_learn.save_label_dic(device_dic,"device_label.json")
-    """
+
 """becon-frame 가공
 becon-frame을 전처리 및 가공하여 학습 모델 생성
 """

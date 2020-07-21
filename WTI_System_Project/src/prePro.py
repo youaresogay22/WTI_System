@@ -144,7 +144,9 @@ return
 """
 def extract_macAddress(path):
     csv_file = pd.read_csv(path)
-    return list(set(csv_file["wlan.sa"])) #unique and list
+    mac_list = list(set(csv_file["wlan.sa"])) #unique and list
+    mac_list.sort()
+    return mac_list
     
 """열 데이터 추출
 

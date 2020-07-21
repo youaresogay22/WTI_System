@@ -121,69 +121,22 @@ def read_csv(csvfile):
         y_train.append(b)
     return x_train, y_train
 
-"""write the probe-request's feature data
-write the sequnce number delta, length, label.
-sequence number delta is saved to using linear_regression.
-"""
-def init_seq_FeatureFile(mac_csv_dc, probe_path, device_dic):
-    time_list = []          #frame.time_relative
-    seqNum_list = []    #sequence number delta
-    csv_fm_list = []      #feature csv file names
-    W = 0                     #delta
-    label_val = 0
-
-    for key,value in mac_csv_dc.items():
-    
-        for idx in range(len(value)):
-            csvFile = value[idx]           
-            x_train = machine_learn.make_timeRelative_list(csvFile)
-            y_train = machine_learn.make_seqNumberList(csvFile)
-            
-            
-            
-            if len(x_train)<14:
-                continue
-            
-            if key in device_dic.values():
-                for dd_label, mac in device_dic.items():
-                    if mac==key:
-                        label_val = dd_label
-                        break
-            else:
-                continue
-
-            if not x_train or not y_train:
-                continue
-            else:
-                W = float(machine_learn.tensor_linear_regression(x_train,y_train)) #get seqeuce number delta
-                
-            csv_fm = probe_path + key + "/" + key + "_FeatureModle.csv" #make feature file name
-            
-            if csv_fm not in csv_fm_list: #save the featuremodel.csv name
-                csv_fm_list.append(csv_fm)
-
-            
-            with open(csvFile,"r") as f:    #save the length
-                rdr = csv.reader(f)
-                temp_rdr = rdr.__next__()
-                length = temp_rdr[3]
-
-            
-            with open(csv_fm,"a") as f: #write the probe-request features
-                feature_line = [W,length,label_val]
-                writer = csv.writer(f)
-                writer.writerow(feature_line)
-            
-    return csv_fm_list, device_dic
-
-def init_seq_FeatureFile2(data, mac_list, probe_path, device_dic):
+def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"):
+    fm_name_list = []
     for mac in mac_list:
-        dt, ds = probe.process_delta(mac)
-        pattern = probe.linear_regression(dt,ds)
+        dt, ds = probe.process_delta(mac,csvname)
         
+        #probe-request 데이터가 부족하거나 없는경우
+        if not dt or not ds:
+            continue
+        
+        pattern = probe.linear_regression(dt,ds)
+ 
         #FeatureModel.csv 파일 경로 설정
         dev_bssid = mac.replace(":","_")
-        ospath = filePath.probe_path + dev_bssid + "/" + dev_bssid + "_FeatureModel.csv"
+        ospath = probe_path + dev_bssid + "/" + dev_bssid + "_FeatureModel.csv"
+
+        fm_name_list.append(ospath)
 
         #시퀀스 넘버 증가율들을 리스트에 저장한다.
         delta_seq_list = []
@@ -200,12 +153,14 @@ def init_seq_FeatureFile2(data, mac_list, probe_path, device_dic):
             if value==mac:
                 label = key
         
+        feature_line = []
         with open(ospath,"a") as f:
-            feature_line = [delta_seq_list]
+            for delta_seq in delta_seq_list:
+                feature_line.append([delta_seq,length,label])    
             writer = csv.writer(f)
             writer.writerows(feature_line)
         
-
+    return fm_name_list
         
     
 

@@ -18,6 +18,7 @@ import numpy as np
 import identify
 import collect
 import testset
+import probe
 
 
 """probe-request 가공
@@ -25,44 +26,34 @@ probe-request를 전처리 및 학습 모델 생성
 """
 def proReq_process():
     mac_list = []       # wlan.sa list, list["fe:e6:1a:f1:d6:49", ... ,"f4:42:8f:56:be:89"]
-    mac_pkt_dc = {}     # key:wlan.sa, value: probe-request(list)
-    mac_csv_dc = {}     # key:wlan.sa, value: csv file names(list)
-    csv_fm_list = []    # feature model file names for each wlan.sa(mac address)
     feat_x_train = []   # random forest model x_train
     feat_y_train = []   # random forest model y_train
     device_dic = {}     # key:label value: mac address
     label = 0
 
-    #collect.device_filter(filePath.learn_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
-
-    prePro.prepro_seq(filePath.learn_csv_probe_path,filePath.learn_csv_probeRe_path) #시퀀스 넘버 전처리
+    collect.device_filter(filePath.learn_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
 
     mac_list = prePro.extract_macAddress(filePath.learn_csv_probe_path)   # 맥주소 추출
-    
-    mac_list.sort() # 맥주소 정렬
 
-    file.make_macDirectory(filePath.probe_path,mac_list) # 맥주소별 디렉토리 생성
-    
-    mac_csv_dc = file.make_macCsvFile(filePath.probe_path,mac_list,10) # 맥주소별 time csv 파일 생성
+    data = probe.read_probe(filePath.learn_csv_probe_path)
 
-    mac_pkt_dc = prePro.extract_packetLine(filePath.learn_csv_probeRe_path,mac_list) # 패킷 데이터 추출
-
-    file.save_csvFile(filePath.probe_path,mac_pkt_dc,10) # csv파일에 데이터 저장
+    probe.separate_probe(mac_list,data)
 
     # make feature csv file for each the wlan.sa
     for mac_name in mac_list:
         file.make_csvFeature(filePath.probe_path,mac_name,"seq")
 
-    for key in mac_csv_dc.keys():
-        device_dic.update({label:key})
+    for mac in mac_list:
+        device_dic.update({label:mac})
         label += 1
+    
+    fm_name_list = file.init_seq_FeatureFile(data, mac_list, filePath.probe_path, device_dic) #a dd the feature data
+    
+    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(fm_name_list) # 학습 데이터 생성
 
-    csv_fm_list, device_dic = file.init_seq_FeatureFile(mac_csv_dc, filePath.probe_path, device_dic) #a dd the feature data
-
-    feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(csv_fm_list) # 학습 데이터 생성
 
     device_model = machine_learn.random_forest_model(feat_x_train,feat_y_train) # 무선단말 식별 모델 생성
-
+    
     machine_learn.save_model(device_model,"device_model.pkl")
 
     machine_learn.save_label_dic(device_dic,"device_label.json")
@@ -197,8 +188,8 @@ def main():
             beacon_process() # becon-frame 가공 및 학습 모델 생성
             ap_model = machine_learn.load_model("ap_model.pkl")
             ap_dic = machine_learn.load_label_dic("ap_label.json")
-            device_model = machine_learn.load_model("device_model.pkl")
-            device_dic = machine_learn.load_label_dic("device_label.json")
+            #device_model = machine_learn.load_model("device_model.pkl")
+            #device_dic = machine_learn.load_label_dic("device_label.json")
             
         elif cmd_num=="4":
             while True:
