@@ -123,6 +123,9 @@ def read_csv(csvfile):
 
 def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"):
     fm_name_list = []
+    with open("report.csv","w") as f:
+        csv.writer(f)
+    
     for mac in mac_list:
         dt, ds = probe.process_delta(mac,csvname)
         
@@ -130,7 +133,8 @@ def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"
         if not dt or not ds:
             continue
         
-        pattern = probe.linear_regression(dt,ds)
+        
+        pattern = probe.linear_regression(dt,ds,mac)
  
         #FeatureModel.csv 파일 경로 설정
         dev_bssid = mac.replace(":","_")

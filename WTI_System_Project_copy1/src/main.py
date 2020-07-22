@@ -31,13 +31,13 @@ def proReq_process():
     device_dic = {}     # key:label value: mac address
     label = 0
 
-    collect.device_filter(filePath.learn_csv_probe_path) # 지정한 기기만 필터하여 probe.csv에 저장
+    collect.device_filter(filePath.learn_csv_probe_path,savename=filePath.learn_csv_probe2_path) # 지정한 기기만 필터하여 probe.csv에 저장
 
-    mac_list = prePro.extract_macAddress(filePath.learn_csv_probe_path)   # 맥주소 추출
+    mac_list = prePro.extract_macAddress(filePath.learn_csv_probe2_path)   # 맥주소 추출
 
-    data = probe.read_probe(filePath.learn_csv_probe_path)
+    data = probe.read_probe(filePath.learn_csv_probe2_path)
 
-    probe.separate_probe(mac_list,data)
+    #probe.separate_probe(mac_list,data)
 
     # make feature csv file for each the wlan.sa
     for mac_name in mac_list:
@@ -48,7 +48,7 @@ def proReq_process():
         label += 1
     
     fm_name_list = file.init_seq_FeatureFile(data, mac_list, filePath.probe_path, device_dic) #a dd the feature data
-    
+"""    
     feat_x_train, feat_y_train = machine_learn.get_proReq_train_data(fm_name_list) # 학습 데이터 생성
 
 
@@ -57,6 +57,7 @@ def proReq_process():
     machine_learn.save_model(device_model,"device_model.pkl")
 
     machine_learn.save_label_dic(device_dic,"device_label.json")
+"""
 
 """becon-frame 가공
 becon-frame을 전처리 및 가공하여 학습 모델 생성
@@ -161,20 +162,23 @@ def main():
         cmd_num = input("input the command\n"
                         +"1: init directory\n"
                         +"2: collect the packet\n"
-                        +"3: training the ap/device\n"
-                        +"4: ap scan\n"
-                        +"5: device scan\n"
-                        +"6: exit\n"
-                        +"7: create test set\n"
-                        +"8: test the probe-request\n")
+                        +"3: filter the packet\n"
+                        +"4: training the ap/device\n"
+                        +"5: ap scan\n"
+                        +"6: device scan\n"
+                        +"7: exit\n"
+                        +"8: create test set\n"
+                        +"9: test the probe-request\n")
 
         if cmd_num=="1":
             file.init_directory()
-        elif cmd_num=="2":
-            #temp = input("input the network interface and duration('wlan1' 3600) : ").split(" ")
-            #neti, duration = temp[0], temp[1]
-            #collect.packet_collect(neti,duration) # collect the data
 
+        elif cmd_num=="2":
+            temp = input("input the network interface and duration('wlan1' 3600) : ").split(" ")
+            neti, duration = temp[0], temp[1]
+            collect.packet_collect(neti,duration) # collect the data
+
+        elif cmd_num=="3":
             print(".pcapng file list")
             os.system("ls {} | grep '.*[.]pcapng'".format(filePath.pf_path))
             pcapng_name = input("input the file name to filter the pcapng file(data.pcpapng) : ")
@@ -183,23 +187,26 @@ def main():
             collect.packet_filter(pcapng_path,csv_beacon_name=filePath.learn_csv_beacon_path,
                                     csv_probe_name=filePath.learn_csv_probe_path, filter="all") #convert the pcapng file to csv file                            
 
-        elif cmd_num=="3":
+        elif cmd_num=="4":
             proReq_process() # probe-request 가공
-            beacon_process() # becon-frame 가공 및 학습 모델 생성
-            ap_model = machine_learn.load_model("ap_model.pkl")
-            ap_dic = machine_learn.load_label_dic("ap_label.json")
+            #beacon_process() # becon-frame 가공 및 학습 모델 생성
+            #ap_model = machine_learn.load_model("ap_model.pkl")
+            #ap_dic = machine_learn.load_label_dic("ap_label.json")
             #device_model = machine_learn.load_model("device_model.pkl")
             #device_dic = machine_learn.load_label_dic("device_label.json")
             
-        elif cmd_num=="4":
+        elif cmd_num=="5":
             while True:
                 beacon_input = ap_scan("wlan1")
                 identify.ap_identify(ap_model,ap_dic,beacon_input)
-        elif cmd_num=="5":
-            print("device scan!!")
+
         elif cmd_num=="6":
-            return;
+            print("device scan!!")
+
         elif cmd_num=="7":
+            return;
+
+        elif cmd_num=="8":
             print(".pcapng file list")
             os.system("ls {} | grep '.*[.]pcapng'".format(filePath.pf_path))
             pcapng_name = input("input the file name to filter the pcapng file(data.pcpapng) : ")
@@ -223,7 +230,7 @@ def main():
                 writer = csv.writer(f)
                 writer.writerows(beacon_input)
 
-        elif cmd_num=="8":
+        elif cmd_num=="9":
             device_model = machine_learn.load_model("device_model.pkl")
             device_dic = machine_learn.load_label_dic("device_label.json")
             proReq_input = []

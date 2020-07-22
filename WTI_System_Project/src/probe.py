@@ -125,7 +125,7 @@ def process_delta(dev,csvname="probe"):
 
     return dt, ds
 
-def linear_regression(dt, ds):
+def linear_regression(dt, ds,mac):
     tf.disable_v2_behavior()
 
     W = tf.Variable(tf.random_normal([1]))
@@ -152,7 +152,7 @@ def linear_regression(dt, ds):
             _, cost_val, W_val, b_val = sess.run([train, cost, W, b],feed_dict={X:dt[i], Y:ds[i]})
             tempcost.append(W_val)
 
-        print(step, W_val, cost_val)
+        print(mac, step, W_val, cost_val)
         pattern.append(W_val)
         pred.append(W_val*ds[i] + b_val)
         costt.append(tempcost)

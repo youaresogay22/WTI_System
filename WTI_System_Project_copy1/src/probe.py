@@ -5,6 +5,7 @@ import filePath
 import tensorflow.compat.v1 as tf
 import collect
 import prePro
+import csv
 """probe.csv를 참조하여 읽는다.
 
 params
@@ -125,7 +126,7 @@ def process_delta(dev,csvname="probe"):
 
     return dt, ds
 
-def linear_regression(dt, ds):
+def linear_regression(dt, ds,mac,savename="report.csv"):
     tf.disable_v2_behavior()
 
     W = tf.Variable(tf.random_normal([1]))
@@ -157,6 +158,12 @@ def linear_regression(dt, ds):
         pred.append(W_val*ds[i] + b_val)
         costt.append(tempcost)
 
+        result = ["mac :"+mac, "delta seq no : "+str(W_val), "cost : "+str(cost_val)]
+        with open(savename,"a") as f:
+            writer = csv.writer(f)
+            writer.writerow(result)
+
+    
     return pattern
 """
 data = read_probe(filePath.learn_csv_probe_path)

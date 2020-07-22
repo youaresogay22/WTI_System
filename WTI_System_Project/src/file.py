@@ -130,7 +130,7 @@ def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"
         if not dt or not ds:
             continue
 
-        pattern = probe.linear_regression(dt,ds)
+        pattern = probe.linear_regression(dt,ds,mac)
  
         #FeatureModel.csv 파일 경로 설정
         dev_bssid = mac.replace(":","_")
