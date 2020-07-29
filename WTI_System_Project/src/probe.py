@@ -138,7 +138,7 @@ def linear_regression(dt, ds,mac):
 
     cost = tf.reduce_mean(tf.square(hypothesis-Y))
     
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate = 0.000005)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate = 0.0000005)
     train = optimizer.minimize(cost)
     pattern = []
     pred = []
