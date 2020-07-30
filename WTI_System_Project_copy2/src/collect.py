@@ -55,22 +55,15 @@ def device_filter(filename,mode):
     dev_list = []
 
     if mode=="probe":
-        
         dev_list = [
-            "f8:e6:1a:f1:d6:49",
-            "84:2e:27:6b:53:df",
-            "00:f4:6f:9e:c6:eb",
-            "94:d7:71:fc:67:c9",
-            "ac:36:13:5b:00:45",
-            #"18:83:31:9b:75:ad",
+            "f8:e6:1a:f1:d6:49", #A
+            "84:2e:27:6b:53:df", #B
+            "00:f4:6f:9e:c6:eb", #C
+            "94:d7:71:fc:67:c9", #D
+            "ac:36:13:5b:00:45", #E
+            #"18:83:31:9b:75:ad",#F
         ]
         
-        """
-        dev_list = [
-            "f8:e6:1a:f1:d6:49"
-        ]
-        """
-
         dummy.append(["wlan.sa",
                         "frame.time_relative",
                         "wlan.seq",
@@ -82,6 +75,111 @@ def device_filter(filename,mode):
             "88:36:6c:67:72:ec",
             "08:5d:dd:65:39:0e"
         ]
+        dummy.append(["wlan.sa",
+                        "wlan.ssid",
+                        "wlan.fixed.timestamp",
+                        "frame.time_relative",
+                        "wlan.ds.current_channel",
+                        "wlan_radio.signal_dbm",
+                        "wlan_radio.duration"])
+
+    with open(filename,"r") as f:
+        rdr = csv.reader(f)
+        
+        for line in rdr:
+            if line[0] in dev_list:
+                dummy.append(line)
+    
+    with open(filename,"w") as f:
+        writer = csv.writer(f)
+        writer.writerows(dummy)
+
+def device_filter_testcase(filename,mode, train=True):
+    dummy = []
+    dev_list = []
+    dev_dic = {
+        "A": "f8:e6:1a:f1:d6:49",
+        "B": "84:2e:27:6b:53:df",
+        "C": "00:f4:6f:9e:c6:eb",
+        "D": "94:d7:71:fc:67:c9",
+        "E": "ac:36:13:5b:00:45",
+        "F": "18:83:31:9b:75:ad",
+    }
+    ap_dev_dic = {
+        "WIFI1": "88:36:6c:67:72:ec",
+        "WIFI2": "08:5d:dd:65:39:0e",
+    }
+    if mode=="probe":
+        if train==True: #train data filter
+            testcase = int(input("input the train's probe testcase(1~6) : "))
+
+            if testcase==1 or testcase==3 or testcase==4 or testcase==6:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"],
+                    dev_dic["E"]
+                ]
+            elif testcase==2 or testcase==5:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"]
+                ]
+            else:
+                pass
+        else: #test data filter
+            testcase = int(input("input the test's probe testcase(1~6) : "))
+            if testcase==1 or testcase==4:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"],
+                    dev_dic["E"]
+                ]
+            elif testcase==2 or testcase==5:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["E"],
+                    dev_dic["F"]
+                ]
+            elif testcase==3 or testcase==6:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"],
+                    dev_dic["F"]
+                ]
+            else:
+                pass
+
+        dummy.append(["wlan.sa",
+                        "frame.time_relative",
+                        "wlan.seq",
+                        "wlan.ssid",
+                        "frame.len"])
+
+    elif mode=="beacon":
+        if train==True: #train data filter
+            dev_list = [ap_dev_dic["WIFI1"]]
+        else: #test data filter
+            testcase = int(input("input the test's beacon testcase(0~6) : "))
+            if testcase==0:
+                dev_list = [ap_dev_dic["WIFI1"],
+                            ap_dev_dic["WIFI2"]]
+            elif testcase==1 or testcase==2 or testcase==3:
+                dev_list = [ap_dev_dic["WIFI1"]]
+            elif testcase==4 or testcase==5 or testcase==6:
+                dev_list = [ap_dev_dic["WIFI2"]]            
+            else:
+                pass
+
         dummy.append(["wlan.sa",
                         "wlan.ssid",
                         "wlan.fixed.timestamp",

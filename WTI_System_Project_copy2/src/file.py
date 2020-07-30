@@ -15,6 +15,9 @@ import pandas
 import probe
 import beacon
 import numpy as np
+
+from scipy import stats
+
 """make directory
 res
     packet
@@ -129,6 +132,7 @@ def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"
     for mac in mac_list:
         dt, ds = probe.process_delta(mac,csvname)
         
+
         #probe-request 데이터가 부족하거나 없는경우
         if not dt or not ds:
             continue
@@ -148,10 +152,13 @@ def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"
 
         #패킷 길이 저장
         temp_data = data[data["wlan.sa"]==mac]
-        length = temp_data.iloc[0]["frame.len"]-len(temp_data.iloc[0]["wlan.ssid"])
-
+        length_list = []
+        for i in range(len(temp_data)):
+            length_list.append(temp_data.iloc[i]["frame.len"]-len(temp_data.iloc[i]["wlan.ssid"]))
+        length = stats.mode(length_list)[0][0]
+        
         #레이블 설정
-        label = 0
+        label = "-1"
         for key, value in device_dic.items():
             if value==mac:
                 label = key

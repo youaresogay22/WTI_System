@@ -13,7 +13,8 @@ import filePath
 import prePro
 import pandas
 import probe
-
+import beacon
+import numpy as np
 """make directory
 res
     packet
@@ -75,6 +76,8 @@ make feature csv file about probe-request or becon-frame
 def make_csvFeature(path,mac,frame="seq"):
     if frame=="seq":
         mac = mac.replace(":","_")
+    elif frame=="beacon":
+        mac = mac.replace(":","_")
 
     csvFeatureFileName = path+mac+"/"+mac+"_"+"FeatureModel.csv"
     with open(csvFeatureFileName,"w") as f:
@@ -123,17 +126,15 @@ def read_csv(csvfile):
 
 def init_seq_FeatureFile(data, mac_list, probe_path, device_dic, csvname="probe"):
     fm_name_list = []
-    with open("report.csv","w") as f:
+    with open("report.csv") as f:
         csv.writer(f)
-    
     for mac in mac_list:
         dt, ds = probe.process_delta(mac,csvname)
         
         #probe-request 데이터가 부족하거나 없는경우
         if not dt or not ds:
             continue
-        
-        
+
         pattern = probe.linear_regression(dt,ds,mac)
  
         #FeatureModel.csv 파일 경로 설정
@@ -177,67 +178,48 @@ becon_path : becon-frame directory for each mac address
 return
 csv_fm_list : feature csv file name list
 """
-def init_beacon_FeatureFile(bc_mac_csv_dc,becon_path=filePath.beacon_path):
-    csv_fm_list = []    #csv feature csv file names
-    bc_list = []
-    x_train = []
-    y_train = []
-    rss_list = []
-    rss_value=0
-    channel = 0
-    duration = 0
-    ssid = ""
-    mac_addr = ""
+def init_beacon_FeatureFile(data,bc_mac_list,beacon_path=filePath.beacon_path):
+    fm_name_list = []
 
-    for key, value in bc_mac_csv_dc.items():
-        for idx in range(len(value)):
-                csvFile = value[idx]
+    for mac in bc_mac_list:
+        
+        tc, to = beacon.process_clockSkew(mac,csvname="beacon")
+        
+        pattern = probe.linear_regression(tc,to,mac,mode="beacon")
+        
+        #FeatureModel.csv 파일 경로 설정
+        dev_bssid = mac.replace(":","_")
 
-                with open(csvFile,"r") as f: #copy the becon-frame to the bc_list
-                    rdr = csv.reader(f)
-                    for line in rdr:
-                        bc_list.append(line)
-                
-                if not bc_list:
-                    continue
-                else:    
-                    for idx in range(len(bc_list)):
-                        x_train.append([float(bc_list[idx][2])]) # i th wlan.fixed.timestamp
-                        y_train.append([(float(bc_list[idx][3])  # (i th frame.time_relative - 0th frame.time_relative) - i th wlan.fixed.timestamp
-                                                -float(bc_list[0][3]))
-                                                -float(bc_list[idx][2])])
-                        rss_list.append(int(bc_list[idx][5]))       # wlan_radio.signal_dbm
+        ospath = beacon_path + dev_bssid + "/" + dev_bssid + "_FeatureModel.csv"
 
-                if x_train and y_train:
-                    
-                    W = float(machine_learn.sklearn_linear_regression(x_train,y_train)) # clock skew
-                    
-                    rss_value = Counter(rss_list) # RSS
+        fm_name_list.append(ospath)
 
-                    channel = int(bc_list[0][4]) # wlands.current_channel
+        #save the clock skew
+        clock_skew = []
+        for item in pattern:
+            clock_skew.append(item[0])
+        
+        
+        rss = int(data[data["wlan.sa"]==mac]["wlan_radio.signal_dbm"].mode()[0])
+        
+        channel = int(data[data["wlan.sa"]==mac]["wlan.ds.current_channel"].mode()[0])
+        
+        duration = int(data[data["wlan.sa"]==mac]["wlan_radio.duration"][0])
 
-                    duration = int(bc_list[0][6]) # wlan_radio.duration
+        ssid = str(data[data["wlan.sa"]==mac]["wlan.ssid"][0])
 
-                    ssid = bc_list[0][1] # wlan.ssid
+        mac_addr = str(data[data["wlan.sa"]==mac]["wlan.sa"][0])
 
-                    mac_addr = bc_list[0][0] # wlan.sa
-                    
-                    csv_fm = becon_path + key + "/" + key + "_FeatureModle.csv"
-                    
-                    if csv_fm not in csv_fm_list:
-                        csv_fm_list.append(csv_fm)
-
-                    with open(csv_fm,"a") as f: #write the becon-frame feature
-                        feature_lline = [W,rss_value,channel,duration,ssid,mac_addr]
-                        writer = csv.writer(f)
-                        writer.writerow(feature_lline)
-                    
-                x_train = []
-                y_train = []
-                bc_list = []
-                rss_list = []
-
-    return csv_fm_list
+        
+        
+        feature_line = []
+        with open(ospath,"a") as f:
+            for cs in clock_skew:
+                feature_line.append([cs,rss,channel,duration,ssid,mac_addr])    
+            writer = csv.writer(f)
+            writer.writerows(feature_line)
+        
+    return fm_name_list
 
 """find the mode
 count the number in  becon-frame linst

@@ -5,7 +5,7 @@ import filePath
 import tensorflow.compat.v1 as tf
 import collect
 import prePro
-import csv
+import math
 """probe.csv를 참조하여 읽는다.
 
 params
@@ -126,7 +126,7 @@ def process_delta(dev,csvname="probe"):
 
     return dt, ds
 
-def linear_regression(dt, ds,mac,savename="report.csv"):
+def linear_regression(dt, ds,mac,mode="probe"):
     tf.disable_v2_behavior()
 
     W = tf.Variable(tf.random_normal([1]))
@@ -139,7 +139,14 @@ def linear_regression(dt, ds,mac,savename="report.csv"):
 
     cost = tf.reduce_mean(tf.square(hypothesis-Y))
     
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate = 0.000005)
+    if mode=="probe":
+        lr = 0.000005
+    elif mode =="beacon":
+        lr = 0.000001
+    else:
+        lr = 0.000005
+
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate = lr)
     train = optimizer.minimize(cost)
     pattern = []
     pred = []
@@ -153,17 +160,18 @@ def linear_regression(dt, ds,mac,savename="report.csv"):
             _, cost_val, W_val, b_val = sess.run([train, cost, W, b],feed_dict={X:dt[i], Y:ds[i]})
             tempcost.append(W_val)
 
-        print(step, W_val, cost_val)
+        if math.isnan(W_val[0]):
+            continue
+        print(mac, step, W_val, cost_val)
         pattern.append(W_val)
         pred.append(W_val*ds[i] + b_val)
         costt.append(tempcost)
+
 
         result = ["mac :"+mac, "delta seq no : "+str(W_val), "cost : "+str(cost_val)]
         with open(savename,"a") as f:
             writer = csv.writer(f)
             writer.writerow(result)
-
-    
     return pattern
 """
 data = read_probe(filePath.learn_csv_probe_path)

@@ -31,11 +31,14 @@ def proReq_process():
     device_dic = {}     # key:label value: mac address
     label = 0
 
-    collect.device_filter(filePath.learn_csv_probe_path,mode="probe") # 지정한 기기만 필터하여 probe.csv에 저장
+    #collect.device_filter(filePath.learn_csv_probe_path,mode="probe") # 지정한 기기만 필터하여 probe.csv에 저장
+    collect.device_filter_testcase(filePath.learn_csv_probe_path,mode="probe",train=True) # 지정한 기기만 필터하여 probe.csv에 저장
 
     mac_list = prePro.extract_macAddress(filePath.learn_csv_probe_path)   # 맥주소 추출
 
     data = probe.read_probe(filePath.learn_csv_probe_path)
+
+    file.make_Directory(filePath.probe_path)
 
     probe.separate_probe(mac_list,data)
 
@@ -67,7 +70,8 @@ def beacon_process():
     bc_csv_fm_list = [] # becon-frame feature csv file names(list)
     ap_dic = {}         # key : (ssid,MAC Address), value: label
     
-    collect.device_filter(filePath.learn_csv_beacon_path,mode="beacon") # 지정한 기기만 필터하여 probe.csv에 저장
+    #collect.device_filter(filePath.learn_csv_beacon_path,mode="beacon") # 지정한 기기만 필터하여 probe.csv에 저장
+    collect.device_filter_testcase(filePath.learn_csv_beacon_path,mode="beacon",train=True) # 지정한 기기만 필터하여 probe.csv에 저장
 
     bc_mac_list = prePro.extract_macAddress(filePath.learn_csv_beacon_path) # 맥주소 추출
     
@@ -181,9 +185,9 @@ def main():
 
         elif cmd_num=="4":
             proReq_process() # probe-request 가공
-            beacon_process() # becon-frame 가공 및 학습 모델 생성
-            ap_model = machine_learn.load_model("ap_model.pkl")
-            ap_dic = machine_learn.load_label_dic("ap_label.json")
+            #beacon_process() # becon-frame 가공 및 학습 모델 생성
+            #ap_model = machine_learn.load_model("ap_model.pkl")
+            #ap_dic = machine_learn.load_label_dic("ap_label.json")
             device_model = machine_learn.load_model("device_model.pkl")
             device_dic = machine_learn.load_label_dic("device_label.json")
             
@@ -211,14 +215,14 @@ def main():
             with open(filePath.packet_test_probe_csv_path,"w") as f:
                 writer = csv.writer(f)
                 writer.writerows(proReq_input)
-            
+            """
             beacon_input = testset.beacon_createTestset() # 테스트 데이터 생성
 
             # 테스트 데이터 저장
             with open(filePath.packet_test_beacon_csv_path,"w") as f:
                 writer = csv.writer(f)
                 writer.writerows(beacon_input)
-            
+            """
         elif cmd_num=="9":
             device_model = machine_learn.load_model("device_model.pkl")
             device_dic = machine_learn.load_label_dic("device_label.json")
@@ -235,11 +239,12 @@ def main():
 
             # 테스트 데이터 평가
             testset.packet_test(device_model,device_dic,proReq_input,y_test)
-            
+            """
             ap_model = machine_learn.load_model("ap_model.pkl")
             ap_dic = machine_learn.load_label_dic("ap_label.json")
             beacon_input = []
             bc_y_test = []
+            
             # 테스트 데이터 참조
             with open(filePath.packet_test_beacon_csv_path,"r") as f:
                 rdr = csv.reader(f)
@@ -249,7 +254,7 @@ def main():
                     
             # 테스트 데이터 평가
             testset.packet_test(ap_model, ap_dic, beacon_input, bc_y_test)
-            
+            """
         else:
             print("This is an invalid the command!!")
 

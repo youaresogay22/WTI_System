@@ -152,8 +152,11 @@ def get_proReq_FeatureModel(name):
         
         for row in rdr:
             x_train.append(list(map(float,row[:2])))  # convert all str list to integer list
-            y_train.append(list(map(int,row[-1])))  # conver all str list to integer list
-
+            if row[-1]=="-1":
+                y_train.append([row[-1]])
+            else:
+                y_train.append(list(map(int,row[-1])))  # conver all str list to integer list
+                
     return x_train, y_train
 
 """get training data

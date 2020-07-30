@@ -6,6 +6,7 @@ import tensorflow.compat.v1 as tf
 import collect
 import prePro
 import math
+import numpy as np
 """probe.csv를 참조하여 읽는다.
 
 params
@@ -43,6 +44,7 @@ def separate_probe(dev_list,data,csvname="probe"):
         #mac별 디렉토리 생성
         if not os.path.isdir(ospath):
             os.makedirs(ospath)
+        
         
         dummy = data[data["wlan.sa"]==_sa]
         indd = []
@@ -167,6 +169,8 @@ def linear_regression(dt, ds,mac,mode="probe"):
         pred.append(W_val*ds[i] + b_val)
         costt.append(tempcost)
 
+    print("Delta Seq No : {}".format(np.mean(pattern)))
+    
     return pattern
 """
 data = read_probe(filePath.learn_csv_probe_path)
