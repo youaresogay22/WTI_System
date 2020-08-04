@@ -1,31 +1,48 @@
+"""
+title : 패킷 수집 및 필터링 관련 모듈
+author : 김용환 (dragonbead95@naver.com)
+date : 2020-08-03
+detail : 
+todo :
+"""
+
 import os
 import filePath
 import csv
 
+"""패킷 데이터 수집
+params
+neti : 네트워크 인터페이스
+sec : 수집time(초/s)
+pcapng_name : 저장할 pcapng 파일 이름
+"""
 def packet_collect(neti, sec,pcapng_name="data.pcapng"):
-
-    """Set the NIC monitor mode
-    Set the NIC(Network Interface Card) from managed mode to monitor mode
+    """랜카드를 모니터 모드로 설정
     """
-    
     os.system("sudo ifconfig {} down".format(neti))
     os.system("sudo iwconfig {} mode monitor".format(neti))
     os.system("sudo ifconfig {} up".format(neti))
      
-    """Capture the packet
-    step1 Scan the becon frame or probe-request
-    step2 select the frame field
-    step3 save the becon frame and probe-request
-    """
+    #패킷 수집 명령어
     os.system("sudo tshark -i {} -w ".format(neti)
-                    + filePath.pf_data_path
+                    + filePath.pf_path
+                    + "/" + pcapng_name
                     + " -f \'wlan type mgt and (subtype beacon or subtype probe-req)\'"
                     + " -a duration:{}".format(sec))
-    
-    
+
+"""패킷 필터
+pcapng 파일을 필터링하여 csv 파일로 변환한다.
+pcapng_name : 필터링할 pcapng 파일 이름
+csv_beacon_name : beacon-frame만을 필터링한 csv 파일 경로 및 이름
+csv_probe_name : probe-request 만을 필터링한 csv 파일 경로 및 이름
+filter : all-> beacon-frame, probe-request 모두 필터링
+         probe -> probe-request만 필터링
+         beacon -> beacon-frame만 필터링
+"""
 def packet_filter(pcapng_name, csv_beacon_name=filePath.learn_csv_beacon_path,
                      csv_probe_name=filePath.learn_csv_probe_path, filter="all"):
 
+    #pcapng 파일을 참조하여 probe,beacon 데이터를 필터링한다.
     if filter=="all":
         os.system("sudo tshark -r "
                         + pcapng_name
@@ -50,28 +67,159 @@ def packet_filter(pcapng_name, csv_beacon_name=filePath.learn_csv_beacon_path,
                         + " -T fields -e wlan.sa -e frame.time_relative -e wlan.seq -e wlan.ssid -e frame.len -E separator=, -E quote=n -E header=y > "
                         + csv_probe_name)
 
-def device_filter(filename):
-    dev_list = [
-        "84:2e:27:6b:53:df",
-        "ac:36:13:5b:00:45",
-        "94:d7:71:fc:67:c9",
-        "18:83:31:9b:75:ad",
-        "00:f4:6f:9e:c6:eb"
-    ]
-    
-    """
-    dev_list = [
-        "f8:e6:1a:f1:d6:49"
-    ]
-    """
+"""
+디바이스를 필터링하여 probe.csv or beacon.csv 파일에 재저장한다.
+params
+filename: 참조할 probe.csv, beacon.csv 파일 이름
+mode : probe이면 무선단말기기 필터링, beacon이면 ap기기 필터링
+train : True -> 학습용 False -> 테스트용
+"""
+def device_filter_testcase(filename,mode, train=True):
     dummy = []
+    dev_list = []
+    #테스트 케이스에 사용한 무선단말 기기 정보
+    dev_dic = {
+        "A": "f8:e6:1a:f1:d6:49",
+        "B": "84:2e:27:6b:53:df",
+        "C": "00:f4:6f:9e:c6:eb",
+        "D": "94:d7:71:fc:67:c9",
+        "E": "ac:36:13:5b:00:45",
+        "F": "18:83:31:9b:75:ad",
+    }
+    #테스트 케이스에 사용한 AP 정보
+    ap_dev_dic = {
+        "WIFI1": "88:36:6c:67:72:ec", #carlynne
+        "WIFI2": "08:5d:dd:65:39:0e", #cafe wifi
+        "WIFI3": "98:de:d0:c4:a2:e1", #OpenWrt
+        "WIFI4": "a0:ec:f9:9f:a8:c0" #CNU WiFi 
+    }
+    if mode=="probe":
+        if train==True: #훈련용 데이터 테스트 케이스중 무선단말 기기를 필터링한다.
+            testcase = int(input("input the train's probe testcase(1~7) : "))
+
+            if testcase==1 or testcase==3 or testcase==4 or testcase==6:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"],
+                    dev_dic["E"]
+                ]
+            elif testcase==2 or testcase==5:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"]
+                ]
+            elif testcase==7:
+                dev_list = [
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"]
+                ]
+            else:
+                pass
+        else: # 테스트 데이터 테스트 케이스중 무선단말 기기를 필터링한다.
+            testcase = int(input("input the test's probe testcase(1~7) : "))
+            if testcase==1 or testcase==4:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"],
+                    dev_dic["E"]
+                ]
+            elif testcase==2 or testcase==5:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["E"],
+                    dev_dic["F"]
+                ]
+            elif testcase==3 or testcase==6:
+                dev_list=[
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"],
+                    dev_dic["D"],
+                    dev_dic["F"]
+                ]
+            elif testcase==7:
+                dev_list = [
+                    dev_dic["A"],
+                    dev_dic["B"],
+                    dev_dic["C"]
+                ]
+            else:
+                pass
+
+        dummy.append(["wlan.sa",
+                        "frame.time_relative",
+                        "wlan.seq",
+                        "wlan.ssid",
+                        "frame.len"])
+
+    elif mode=="beacon":
+        if train==True: #훈련용 데이터 테스트 케이스 중 AP 기기를 필터링한다.
+            testcase = int(input("input the train's beacon testcase(0~7) : "))
+            if testcase==0:
+                dev_list = [ap_dev_dic["WIFI1"],
+                            ap_dev_dic["WIFI2"]]
+            elif testcase==1 or testcase==2 or testcase==3:
+                dev_list = [ap_dev_dic["WIFI1"]]
+            elif testcase==4 or testcase==5 or testcase==6:
+                dev_list = [ap_dev_dic["WIFI2"]]
+            elif testcase==7:
+                testcase = input("input the train's ap(WIFI3 or WIFI4) : ")
+                if testcase=="WIFI3":
+                    dev_list = [ap_dev_dic["WIFI3"]]
+                elif testcase=="WIFI4":
+                    dev_list = [ap_dev_dic["WIFI4"]]
+                else:
+                    dev_list = [ap_dev_dic["WIFI3"],
+                                ap_dev_dic["WIFI4"]]
+            else:
+                pass
+        else: #test data filter
+            testcase = int(input("input the test's beacon testcase(0~7) : "))
+            if testcase==0:
+                dev_list = [ap_dev_dic["WIFI1"],
+                            ap_dev_dic["WIFI2"]]
+            elif testcase==1 or testcase==2 or testcase==3:
+                dev_list = [ap_dev_dic["WIFI1"]]
+            elif testcase==4 or testcase==5 or testcase==6:
+                dev_list = [ap_dev_dic["WIFI2"]]
+            elif testcase==7:
+                testcase = input("input the test's ap(WIFI3 or WIFI4) : ")
+                if testcase=="WIFI3":
+                    dev_list = [ap_dev_dic["WIFI3"]]
+                elif testcase=="WIFI4":
+                    dev_list = [ap_dev_dic["WIFI4"]]
+                else:
+                    dev_list = [ap_dev_dic["WIFI3"],
+                                ap_dev_dic["WIFI4"]]         
+            else:
+                pass
+
+        dummy.append(["wlan.sa",
+                        "wlan.ssid",
+                        "wlan.fixed.timestamp",
+                        "frame.time_relative",
+                        "wlan.ds.current_channel",
+                        "wlan_radio.signal_dbm",
+                        "wlan_radio.duration"])
+
+    #csv 파일을 열어 dev_list에 있는 맥주소만 dummy 리스트에 데이터를 저장
     with open(filename,"r") as f:
         rdr = csv.reader(f)
-        dummy.append(["wlan.sa","frame.time_relative","wlan.seq","wlan.ssid","frame.len"])
+        
         for line in rdr:
             if line[0] in dev_list:
                 dummy.append(line)
     
+    #해당 파일(filename)에 dummy 내용을 재작성
     with open(filename,"w") as f:
         writer = csv.writer(f)
         writer.writerows(dummy)

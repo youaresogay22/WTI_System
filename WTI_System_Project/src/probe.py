@@ -5,6 +5,9 @@ import filePath
 import tensorflow.compat.v1 as tf
 import collect
 import prePro
+import math
+import numpy as np
+
 """probe.csv를 참조하여 읽는다.
 
 params
@@ -13,9 +16,6 @@ filename : .csv 파일 경로
 return
 data : DataFrame type
 """
-
-csvname = "probe"
-dev_name = []
 def read_probe(filename):
     file_list = [filename]
 
@@ -29,21 +29,29 @@ def read_probe(filename):
     data = df_list[0]
 
     return data
-
+    
+"""맥별로 데이터를 분류하여 저장한다.
+params
+dev_list : 무선단말기기 맥주소
+data : 무선단말기기들의 통합된 정보 데이터
+csvname : csv파일들을 저장할 디렉터리 이름
+"""
 def separate_probe(dev_list,data,csvname="probe"):
     
     dummy = 0 
 
+    #맥주소를 하나씩 받는다.
     for _sa in dev_list:
-        dev_bssid = _sa.replace(":","_")
-        #ospath = "./separated/" + csvname + "/" + dev_bssid
+        dev_bssid = _sa.replace(":","_") #ex) f8:e6:1a:f1:d6:49 -> f8_e6_1a_f1_d6_49
+
         ospath = filePath.packet_path + "/" + csvname + "/" + dev_bssid
 
         #mac별 디렉토리 생성
         if not os.path.isdir(ospath):
             os.makedirs(ospath)
         
-        dummy = data[data["wlan.sa"]==_sa]
+        
+        dummy = data[data["wlan.sa"]==_sa] #_sa 맥주소와 동일한 데이터만 추출하여 dummy에 저장한다.
         indd = []
         timedif = []
         leng = []
@@ -73,7 +81,7 @@ def separate_probe(dev_list,data,csvname="probe"):
 
         newdummy = pd.DataFrame({"sa" : dummy["wlan.sa"], "timedifference":timedif, "sequence no":seqno, "length" : leng})
 
-
+        #csv를 10분간격으로 분류하여 저장한다.
         for i in range(144):
             ret = newdummy[newdummy["timedifference"] >= (i*600)][newdummy["timedifference"]<600 * (i+1)]
             if len(ret) < 14:
@@ -81,8 +89,21 @@ def separate_probe(dev_list,data,csvname="probe"):
             filename = ospath + "/" + dev_bssid + "_" + str(i//6) + "_" + str((i%6)*10) + ".csv"
             ret.to_csv(filename, mode="w")
 
+"""
+params
+하나의 맥주소에 대해서 10분간격으로 분류된 csv파일을 참조하여 각각의 파일의
+수신시관과 시퀀스넘버를 리스트 형태로 저장한다.
+
+dev : mac주소
+csvname : csv 파일 경로를 찾기 위한 문자열 경로
+
+return
+dt : 수신time 리스트
+ds : 시퀀스 넘버 리스트
+
+"""
 def process_delta(dev,csvname="probe"):
-    global dev_name
+    dev_name = []
     ap_name = []
     data_list = []
     data_size = []
@@ -94,7 +115,6 @@ def process_delta(dev,csvname="probe"):
     for i in range(144):
         dev_bssid = dev.replace(":","_")
 
-        #ospath = "./separated/" + csvname + "/" + dev_bssid
         ospath = filePath.packet_path + "/" + csvname + "/" + dev_bssid
             
         filename = ospath + "/" + dev_bssid + "_" + str(i//6) + "_" + str((i%6)*10) + ".csv"
@@ -105,8 +125,9 @@ def process_delta(dev,csvname="probe"):
             data_list.append(df)
             data_size.append(len(df))
 
-            deltatime.append(df["timedifference"])
-            deltaseq.append(df["sequence no"])
+            
+            deltatime.append(df["timedifference"]) #해당 csv파일의 timedifference를 가져와 저장한다.
+            deltaseq.append(df["sequence no"]) #해당 csv파일의 sequence no를 가져와 저장한다.
         except:
             lost.append([dev,i])
             continue
@@ -125,7 +146,7 @@ def process_delta(dev,csvname="probe"):
 
     return dt, ds
 
-def linear_regression(dt, ds,mac):
+def linear_regression(dt, ds,mac,mode="probe"):
     tf.disable_v2_behavior()
 
     W = tf.Variable(tf.random_normal([1]))
@@ -138,7 +159,12 @@ def linear_regression(dt, ds,mac):
 
     cost = tf.reduce_mean(tf.square(hypothesis-Y))
     
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate = 0.0000005)
+    if mode=="probe":
+        lr = 0.000005
+    elif mode =="beacon":
+        lr = 0.000001
+
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate = lr)
     train = optimizer.minimize(cost)
     pattern = []
     pred = []
@@ -152,22 +178,14 @@ def linear_regression(dt, ds,mac):
             _, cost_val, W_val, b_val = sess.run([train, cost, W, b],feed_dict={X:dt[i], Y:ds[i]})
             tempcost.append(W_val)
 
+        if math.isnan(W_val[0]):
+            continue
         print(mac, step, W_val, cost_val)
         pattern.append(W_val)
         pred.append(W_val*ds[i] + b_val)
         costt.append(tempcost)
 
+    #delta seq no 평균을 구한다.
+    print("Delta Seq No : {}".format(np.mean(pattern)))
+    
     return pattern
-"""
-data = read_probe(filePath.learn_csv_probe_path)
-
-dev_list = ["f8:e6:1a:f1:d6:49"]
-
-separate_probe(dev_list,data)
-
-
-
-dt, ds = process_delta(dev_list)
-
-linear_regression(dt,ds)
-"""
